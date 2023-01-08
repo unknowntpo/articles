@@ -4,3 +4,6 @@
 [submodule "quickstart/themes/hugo-refresh"]
 	path = quickstart/themes/hugo-refresh
 	url = https://github.com/PippoRJ/hugo-refresh.git
+[submodule "quickstart/themes/LoveIt"]
+	path = quickstart/themes/LoveIt
+	url = https://github.com/dillonzq/LoveIt.git
