@@ -6,7 +6,7 @@ draft: true
 
 This is the first time I practice Box trait in Rust!
 
-```rust
+```Rust
 struct Sheep {}
 struct Cow {}
 
@@ -41,4 +41,5 @@ fn main() {
 }
 ```
 
-Reference: [Returning Traits with dyn](https://doc.rust-lang.org/rust-by-example/trait/dyn.html#returning-traits-with-dyn)
+Reference: 
+    [Returning Traits with dyn](https://doc.rust-lang.org/rust-by-example/trait/dyn.html#returning-traits-with-dyn)
