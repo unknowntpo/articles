@@ -1,7 +1,7 @@
 # About me
 
 
-# I am unknowntpo, a backend software engineer.
+# I am unknowntpo, a Backend Software Engineer.
 
 
 
