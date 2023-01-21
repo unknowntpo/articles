@@ -1,5 +1,5 @@
 ---
-title: "Chatgpt First Glance"
+title: "ChatGPT First Glance"
 date: 2023-01-21T12:00:58+08:00
 draft: false
 author: unknowntpo

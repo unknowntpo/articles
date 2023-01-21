@@ -1,4 +1,4 @@
-# Chatgpt First Glance
+# ChatGPT First Glance
 
 
 
