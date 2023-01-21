@@ -4,7 +4,17 @@
         <link>/posts/</link>
         <description>All Posts | Known, Unknown, Unknownable</description>
         <generator>Hugo -- gohugo.io</generator><language>en</language><managingEditor>e850506@gmail.com (unknowntpo)</managingEditor>
-            <webMaster>e850506@gmail.com (unknowntpo)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sun, 08 Jan 2023 19:38:19 &#43;0800</lastBuildDate><atom:link href="/posts/" rel="self" type="application/rss+xml" /><item>
+            <webMaster>e850506@gmail.com (unknowntpo)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sat, 21 Jan 2023 12:00:58 &#43;0800</lastBuildDate><atom:link href="/posts/" rel="self" type="application/rss+xml" /><item>
+    <title>Chatgpt First Glance</title>
+    <link>/chatgpt-first-glance/</link>
+    <pubDate>Sat, 21 Jan 2023 12:00:58 &#43;0800</pubDate>
+    <author>unknowntpo</author>
+    <guid>/chatgpt-first-glance/</guid>
+    <description><![CDATA[This is my first glance of ChatGPT, and I ask her to generate a peice of code in Haskell, which can map a function to a list.
+The result she generated is totally correct, and can be run in playground.
+1 2 3 4 5 6 7 8 9 10 11 12 addOneToEach :: [Int] -&gt; [Int] addOneToEach xs = map (+1) xs myMap :: (a -&gt; b) -&gt; [a] -&gt; [b] myMap _ [] = [] myMap f (x:xs) = f x : myMap f xs main = do let myList = [1, 2, 3, 4] let doubledList = myMap (*2) myList print doubledList -- Output: [2,4,6,8] Here&rsquo;s the link to our chat: https://sharegpt.]]></description>
+</item>
+<item>
     <title>My First Post</title>
     <link>/my-first-post/</link>
     <pubDate>Sun, 08 Jan 2023 19:38:19 &#43;0800</pubDate>
