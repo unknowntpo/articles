@@ -93,6 +93,13 @@
     </div><main class="main">
                 <div class="container"><div class="page home" data-home="posts"><div class="home-profile"><div class="home-subtitle"><div id="id-1" class="typeit"></div></div><div class="links"><a href="https://github.com/unknowntpo" title="GitHub" target="_blank" rel="noopener noreffer me"><i class="fab fa-github fa-fw" aria-hidden="true"></i></a><a href="https://mastodon.technology/%3cnil%3e" title="Mastodon" target="_blank" rel="noopener noreffer me"><i class="fab fa-mastodon fa-fw" aria-hidden="true"></i></a><a href="tel:555-555-555" title="Phone" rel="me"><i class="fas fa-phone fa-fw" aria-hidden="true"></i></a><a href="mailto:e850506@gmail.com" title="Email" rel="me"><i class="far fa-envelope fa-fw" aria-hidden="true"></i></a><a href="/index.xml" title="RSS" target="_blank" rel="noopener noreffer me"><i class="fas fa-rss fa-fw" aria-hidden="true"></i></a></div></div>
 <article class="single summary" itemscope itemtype="http://schema.org/Article"><h1 class="single-title" itemprop="name headline">
+        <a href="/sync.pool/">Sync.Pool</a>
+    </h1><div class="post-meta"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span>&nbsp;<span class="post-publish">published on <time datetime="2023-02-13">2023-02-13</time></span></div><div class="content">Experiment:
+To demonstrate the improvement of our code, I design a simple benchmark,
+There are three ways we can get data from database.
+Use []Author to hold the data (Structure Binding) Use [][]string to hold the data (Unify Container without sync.Pool) Use [][]string to hold the data, and use sync.Pool to reuse [][]string (Unify Container with sync.Pool) For row number between 1000, 10000, 100000, 200000, 500000, 1000000, we use 8 worker to perform 16 jobs, every job gets all rows from the author table.</div><div class="post-footer">
+        <a href="/sync.pool/">Read More</a></div>
+</article><article class="single summary" itemscope itemtype="http://schema.org/Article"><h1 class="single-title" itemprop="name headline">
         <a href="/chatgpt-first-glance/">ChatGPT First Glance</a>
     </h1><div class="post-meta"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span>&nbsp;<span class="post-publish">published on <time datetime="2023-01-21">2023-01-21</time></span></div><div class="content">This is my first glance of ChatGPT, and I ask her to generate a peice of code in Haskell, which can map a function to a list.
 The result she generated is totally correct, and can be run in playground.
