@@ -1,7 +1,7 @@
 ---
-title: "Sync.Pool"
+title: "Use Sync.Pool to reduce memory consumption"
 date: 2023-02-13T18:50:03+08:00
-draft: false
+draft: true
 ---
 
 Experiment:

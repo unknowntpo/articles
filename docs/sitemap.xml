@@ -2,10 +2,9 @@
     xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
     xmlns:xhtml="http://www.w3.org/1999/xhtml"
     ><url>
-            <loc>/</loc><lastmod>2023-02-13T18:50:03&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>/posts/</loc><lastmod>2023-02-13T18:50:03&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>/sync.pool/</loc><lastmod>2023-02-13T18:50:03&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
             <loc>/chatgpt-first-glance/</loc><lastmod>2023-01-21T12:06:26&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url><url>
+            <loc>/</loc><lastmod>2023-01-21T12:06:26&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url><url>
+            <loc>/posts/</loc><lastmod>2023-01-21T12:06:26&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url><url>
             <loc>/my-first-post/</loc><lastmod>2023-01-13T20:58:50&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url><url>
             <loc>/about/</loc><lastmod>2023-01-13T21:03:20&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url><url>
             <loc>/categories/</loc><changefreq>weekly</changefreq><priority>0.5</priority></url><url>

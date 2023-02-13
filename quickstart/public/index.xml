@@ -4,20 +4,9 @@
         <link>/</link>
         <description>My secret universe</description>
         <generator>Hugo -- gohugo.io</generator><language>en</language><managingEditor>e850506@gmail.com (unknowntpo)</managingEditor>
-            <webMaster>e850506@gmail.com (unknowntpo)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Mon, 13 Feb 2023 18:50:03 &#43;0800</lastBuildDate>
+            <webMaster>e850506@gmail.com (unknowntpo)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sat, 21 Jan 2023 12:00:58 &#43;0800</lastBuildDate>
             <atom:link href="/index.xml" rel="self" type="application/rss+xml" />
         <item>
-    <title>Sync.Pool</title>
-    <link>/sync.pool/</link>
-    <pubDate>Mon, 13 Feb 2023 18:50:03 &#43;0800</pubDate>
-    <author>unknowntpo</author>
-    <guid>/sync.pool/</guid>
-    <description><![CDATA[Experiment:
-To demonstrate the improvement of our code, I design a simple benchmark,
-There are three ways we can get data from database.
-Use []Author to hold the data (Structure Binding) Use [][]string to hold the data (Unify Container without sync.Pool) Use [][]string to hold the data, and use sync.Pool to reuse [][]string (Unify Container with sync.Pool) For row number between 1000, 10000, 100000, 200000, 500000, 1000000, we use 8 worker to perform 16 jobs, every job gets all rows from the author table.]]></description>
-</item>
-<item>
     <title>ChatGPT First Glance</title>
     <link>/chatgpt-first-glance/</link>
     <pubDate>Sat, 21 Jan 2023 12:00:58 &#43;0800</pubDate>
