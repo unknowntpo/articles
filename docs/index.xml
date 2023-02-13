@@ -4,9 +4,21 @@
         <link>/</link>
         <description>My secret universe</description>
         <generator>Hugo -- gohugo.io</generator><language>en</language><managingEditor>e850506@gmail.com (unknowntpo)</managingEditor>
-            <webMaster>e850506@gmail.com (unknowntpo)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sat, 21 Jan 2023 12:00:58 &#43;0800</lastBuildDate>
+            <webMaster>e850506@gmail.com (unknowntpo)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sun, 12 Feb 2023 14:23:03 &#43;0800</lastBuildDate>
             <atom:link href="/index.xml" rel="self" type="application/rss+xml" />
         <item>
+    <title>Part3: Use Index-Only Scan to make our query even faster</title>
+    <link>/idx-only-scan/</link>
+    <pubDate>Sun, 12 Feb 2023 14:23:03 &#43;0800</pubDate>
+    <author>unknowntpo</author>
+    <guid>/idx-only-scan/</guid>
+    <description><![CDATA[But this query still can be better,
+There&rsquo;s a new feature introduced in PostgreSQL 9.2, which allow us to get data from index itself, without touching the actual table data.
+📍 TODO: consider the visibility map
+We can build the mapping between key_id and the rank=1 timestamp first,
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 WITH map AS ( SELECT key_id, timestamp FROM ( SELECT key_id, timestamp, rank() OVER (PARTITION BY key_id ORDER BY TIMESTAMP DESC) AS rank FROM dbData where &#34;timestamp&#34; &lt;= 10000 and key_id &lt; 100 ) sub WHERE rank = 1) SELECT * FROM map; Result will be like:]]></description>
+</item>
+<item>
     <title>ChatGPT First Glance</title>
     <link>/chatgpt-first-glance/</link>
     <pubDate>Sat, 21 Jan 2023 12:00:58 &#43;0800</pubDate>

@@ -1,8 +1,5 @@
----
-title: "Part3: Use Index-Only Scan to make our query even faster"
-date: 2023-02-12T14:23:03+08:00
-draft: false
----
+# Part3: Use Index-Only Scan to make our query even faster
+
 
 But this query still can be better,
 
