@@ -14,7 +14,8 @@
 There&rsquo;s a new feature introduced in PostgreSQL 9.2, which allow us to get data from index itself, without touching the actual table data.
 📍 TODO: consider the visibility map
 We can build the mapping between key_id and the rank=1 timestamp first,
-1 2 3 4 5 6 7 8 9 10 11 12 13 14 WITH map AS ( SELECT key_id, timestamp FROM ( SELECT key_id, timestamp, rank() OVER (PARTITION BY key_id ORDER BY TIMESTAMP DESC) AS rank FROM dbData where &#34;timestamp&#34; &lt;= 10000 and key_id &lt; 100 ) sub WHERE rank = 1) SELECT * FROM map; Result will be like:]]></description>
+1 2 3 4 5 6 7 8 9 10 11 12 13 14  WITHmapAS(SELECTkey_id,timestampFROM(SELECTkey_id,timestamp,rank()OVER(PARTITIONBYkey_idORDERBYTIMESTAMPDESC)ASrankFROMdbDatawhere&#34;timestamp&#34;&lt;=10000andkey_id&lt;100)subWHERErank=1)SELECT*FROMmap;  Result will be like:
+1 2 3 4 5 6  key_id | timestamp --------+----------- 1 | 10000 2 | 300 3 | 6000 4 | 90303   1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19  WITHmapAS(SELECTkey_id,timestampFROM(SELECTkey_id,timestamp,rank()OVER(PARTITIONBYkey_idORDERBYTIMESTAMPDESC)ASrankFROMdbDatawhere&#34;timestamp&#34;&lt;=10000andkey_id&lt;100)subWHERErank=1)SELECTdbKey.]]></description>
 </item>
 <item>
     <title>ChatGPT First Glance</title>
@@ -24,7 +25,7 @@ We can build the mapping between key_id and the rank=1 timestamp first,
     <guid>/chatgpt-first-glance/</guid>
     <description><![CDATA[This is my first glance of ChatGPT, and I ask her to generate a peice of code in Haskell, which can map a function to a list.
 The result she generated is totally correct, and can be run in playground.
-1 2 3 4 5 6 7 8 9 10 11 12 addOneToEach :: [Int] -&gt; [Int] addOneToEach xs = map (+1) xs myMap :: (a -&gt; b) -&gt; [a] -&gt; [b] myMap _ [] = [] myMap f (x:xs) = f x : myMap f xs main = do let myList = [1, 2, 3, 4] let doubledList = myMap (*2) myList print doubledList -- Output: [2,4,6,8] Here&rsquo;s the link to our chat: https://sharegpt.]]></description>
+1 2 3 4 5 6 7 8 9 10 11 12  addOneToEach :: [Int] -&gt; [Int] addOneToEach xs = map (+1) xs myMap :: (a -&gt; b) -&gt; [a] -&gt; [b] myMap _ [] = [] myMap f (x:xs) = f x : myMap f xs main = do let myList = [1, 2, 3, 4] let doubledList = myMap (*2) myList print doubledList -- Output: [2,4,6,8]   Here&rsquo;s the link to our chat: https://sharegpt.]]></description>
 </item>
 <item>
     <title>My First Post</title>
@@ -32,7 +33,9 @@ The result she generated is totally correct, and can be run in playground.
     <pubDate>Sun, 08 Jan 2023 19:38:19 &#43;0800</pubDate>
     <author>unknowntpo</author>
     <guid>/my-first-post/</guid>
-    <description><![CDATA[Hello, This is my first time trying Hugo! Inline Formula: 1 SELECT &#39;hello-world&#39; FROM me Block Formula:]]></description>
+    <description><![CDATA[Hello, This is my first time trying Hugo! Inline Formula: 
+1  SELECT &#39;hello-world&#39; FROM me   Block Formula:
+  ]]></description>
 </item>
 <item>
     <title>About me</title>

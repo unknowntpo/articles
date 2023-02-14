@@ -1,7 +1,7 @@
 {
 	"version": 3,
 	"file": "style.min.css",
-	"sourceRoot": "/Users/unknowntpo/repo/unknowntpo/articles/quickstart",
+	"sourceRoot": "/Users/ds904297/repo/unknowntpo/articles/quickstart",
 	"sources": [
 		"themes/LoveIt/assets/css/style.scss",
 		"quickstart/themes/LoveIt/assets/lib/normalize/normalize.css",
