@@ -101,10 +101,12 @@ Use []Author to hold the data (Structure Binding) Use [][]string to hold the dat
         <a href="/syncpool/">Read More</a><div class="post-tags">
                 <i class="fas fa-tags fa-fw" aria-hidden="true"></i>&nbsp;<a href="/tags/sync.pool/">sync.Pool</a>,&nbsp;<a href="/tags/performance/">performance</a>,&nbsp;<a href="/tags/go/">Go</a></div></div>
 </article><article class="single summary" itemscope itemtype="http://schema.org/Article"><h1 class="single-title" itemprop="name headline">
-        <a href="/idx-only-scan/">Optimize a SELECT query up to 60x faster</a>
-    </h1><div class="post-meta"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span>&nbsp;<span class="post-publish">published on <time datetime="2023-02-12">2023-02-12</time></span></div><div class="content">Identifying the root cause 1 2 3 4 5 6 7 8 9 10 11 12 SELECT dbKey.*, finalDBData.* FROM dbKey, ( SELECT *, rank() OVER (PARTITION BY key_id ORDER BY TIMESTAMP DESC) AS rank FROM dbData where &#34;timestamp&#34; &lt;= 101) finalDBData where rank =1 and finalDBData.key_id = dbKey.id; Because it has to scan the whole dbData table, partition it by key_id, and rank the timestamp,
-planner tend to range over every row in data table to get `rank=1` data, then join it with key table, finally returns it back to client.</div><div class="post-footer">
-        <a href="/idx-only-scan/">Read More</a></div>
+        <a href="/idx-only-scan/">Optimize a PARTITION - SELECT query up to 60x faster</a>
+    </h1><div class="post-meta"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span>&nbsp;<span class="post-publish">published on <time datetime="2023-02-12">2023-02-12</time></span></div><div class="content">This post demonstrates my experience of optimizing a PARTITION - SELECT query, and how I made it up to 60x faster.
+Original Query and the use case Our App is a simple excel data version control system, the data is organized by project, key and data is stored in seperated table called dbKey and dbData .
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 create table dbKey ( id serial , project_id int, -- keys goes here -- NOTE: key can be 1.</div><div class="post-footer">
+        <a href="/idx-only-scan/">Read More</a><div class="post-tags">
+                <i class="fas fa-tags fa-fw" aria-hidden="true"></i>&nbsp;<a href="/tags/performance/">performance</a>,&nbsp;<a href="/tags/postgresql/">PostgreSQL</a></div></div>
 </article><article class="single summary" itemscope itemtype="http://schema.org/Article"><h1 class="single-title" itemprop="name headline">
         <a href="/chatgpt-first-glance/">ChatGPT First Glance</a>
     </h1><div class="post-meta"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span>&nbsp;<span class="post-publish">published on <time datetime="2023-01-21">2023-01-21</time></span></div><div class="content">This is my first glance of ChatGPT, and I ask her to generate a peice of code in Haskell, which can map a function to a list.

@@ -1,12 +1,85 @@
 ---
-title: "Optimize a SELECT query up to 60x faster"
+title: "Optimize a PARTITION - SELECT query up to 60x faster"
 date: 2023-02-12T14:23:03+08:00
 draft: false
+tags: ['performance', 'PostgreSQL']
 ---
+
+This post demonstrates my experience of optimizing a PARTITION - SELECT query,
+and how I made it up to 60x faster.
+
+## Original Query and the use case
+
+Our App is a simple excel data version control system,
+the data is organized by project,
+key and data is stored in seperated table called `dbKey` and `dbData` .
+
+```sql
+create table dbKey (
+ id serial ,
+ project_id int,
+-- keys goes here
+-- NOTE: key can be 1...N fields, and we use string.Join(fields, sep)
+-- to handle it has the key string in backend service
+ name text 
+);
+create table dbData (
+ id serial ,
+ key_id int ,
+ timestamp int 
+
+ ---  data stores at here
+);
+```
+
+and there's also a sheet_version table that stores the `version`, `timestamp` information.
+
+```sql
+create table sheet_version (
+ id serial ,
+ version integer,
+ timestamp int 
+);
+```
+
+Every time we need to get specific version of data (let's say: version `2` ), we access `sheet_version`  table first,
+and get the `sheet_version.timestamp` to construct the `PARTITION - SELECT` query. 
+
+To get the actual data, we need to do these steps:
+1. Partition the data table `dbData` by `key_id`,
+2. Rank it by `timestamp (DESC)`, get the `rank=1` datas from `dbData`
+3. Join `dbKey` and `dbData` back togetter.
+
+Here's the query:
+
+```sql
+SELECT
+ dbKey.*, finalDBData.*
+FROM
+    dbKey,
+    (
+    SELECT
+    *,
+    rank() OVER (PARTITION BY key_id ORDER BY TIMESTAMP DESC) AS rank
+    FROM
+    dbData where "timestamp" <= 101) finalDBData
+where
+dbKey.project_id = 10
+and rank =1 
+and finalDBData.key_id = dbKey.id;
+```
+
+Here's the [db<>fiddle](https://dbfiddle.uk/CKXXlQUE) you can play with this query.
+
+>We choose this design because it can save a lot of space to store every version of data.
+If version `2` has 10 keys, each key has 50 data,
+and if we change data under only 1 key, we only have to re-insert all data under this modified key.
+and only need to insert `50` data.
+Of course, this design has some limitations, but in this post, let's focus on the `PARTITION - SELECT` query optimization.
 
 ## Identifying the root cause
 
-```
+```sql
 SELECT
  dbKey.*, finalDBData.*
 FROM
@@ -21,17 +94,21 @@ where rank =1
 and finalDBData.key_id = dbKey.id;
 ```
 
-Because it has to scan the whole `dbData` table,
-partition it by `key_id`,
-and rank the timestamp,
+### useless index and Sequential scan
 
-<reason of seq scan>
-planner tend to range over every row in data table to get `rank=1` data, then join it with key table, finally returns it back to client.
-
-so it's so slow,
+This query is slow it has to scan the whole `dbData` table,
+partition it by `key_id`, and rank the timestamp,
+planner tends to range over every row in data table to get `rank=1` data,
+and then join it with key table, finally returns it back to client.
+So this query it's so slow,
 we current have about `30000` keys in key table, each project has about `2000` keys, and almost `100` milion
-data rows in data table. 
-It usually takes at least 60 second to get the particular version of data. 
+data rows in data table,
+it usually takes at least `60` second to get the particular version of data. 
+
+## Approach 1: Materialized View
+
+We can use materialized view to cache the result set of particalar version of data,
+but the first one who needs to get data still suffers from the slow query.
 
 ## Improvement: Index-Only Scan
 
@@ -108,6 +185,11 @@ which satisfied requirement `2` in the documentation,
 and later when we query `dbData` , we can still have Index Scan.
 
 Here's the example [ query plan ](https://explain.dalibo.com/plan/86114340afae7349)
+
+## Final choice: I want them all! 
+
+We decided to use this optimized query to build the materialized view,
+and maintain a materialized view (we call it `mat_view` for short) management system to organize the creation, deletion of these mat_views.
 
 Reference:
 - [PostgreSQL Wiki]( https://wiki.postgresql.org/wiki/Index-only_scans )

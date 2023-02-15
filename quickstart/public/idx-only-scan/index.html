@@ -4,9 +4,10 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
-        <title>Optimize a SELECT query up to 60x faster - Known, Unknown, Unknownable</title><meta name="Description" content="My secret universe"><meta property="og:title" content="Optimize a SELECT query up to 60x faster" />
-<meta property="og:description" content="Identifying the root cause 1 2 3 4 5 6 7 8 9 10 11 12 SELECT dbKey.*, finalDBData.* FROM dbKey, ( SELECT *, rank() OVER (PARTITION BY key_id ORDER BY TIMESTAMP DESC) AS rank FROM dbData where &#34;timestamp&#34; &lt;= 101) finalDBData where rank =1 and finalDBData.key_id = dbKey.id; Because it has to scan the whole dbData table, partition it by key_id, and rank the timestamp,
-planner tend to range over every row in data table to get `rank=1` data, then join it with key table, finally returns it back to client." />
+        <title>Optimize a PARTITION - SELECT query up to 60x faster - Known, Unknown, Unknownable</title><meta name="Description" content="My secret universe"><meta property="og:title" content="Optimize a PARTITION - SELECT query up to 60x faster" />
+<meta property="og:description" content="This post demonstrates my experience of optimizing a PARTITION - SELECT query, and how I made it up to 60x faster.
+Original Query and the use case Our App is a simple excel data version control system, the data is organized by project, key and data is stored in seperated table called dbKey and dbData .
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 create table dbKey ( id serial , project_id int, -- keys goes here -- NOTE: key can be 1." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="/idx-only-scan/" /><meta property="og:image" content="/logo.png"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2023-02-12T14:23:03+08:00" />
@@ -15,9 +16,10 @@ planner tend to range over every row in data table to get `rank=1` data, then jo
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="/logo.png"/>
 
-<meta name="twitter:title" content="Optimize a SELECT query up to 60x faster"/>
-<meta name="twitter:description" content="Identifying the root cause 1 2 3 4 5 6 7 8 9 10 11 12 SELECT dbKey.*, finalDBData.* FROM dbKey, ( SELECT *, rank() OVER (PARTITION BY key_id ORDER BY TIMESTAMP DESC) AS rank FROM dbData where &#34;timestamp&#34; &lt;= 101) finalDBData where rank =1 and finalDBData.key_id = dbKey.id; Because it has to scan the whole dbData table, partition it by key_id, and rank the timestamp,
-planner tend to range over every row in data table to get `rank=1` data, then join it with key table, finally returns it back to client."/>
+<meta name="twitter:title" content="Optimize a PARTITION - SELECT query up to 60x faster"/>
+<meta name="twitter:description" content="This post demonstrates my experience of optimizing a PARTITION - SELECT query, and how I made it up to 60x faster.
+Original Query and the use case Our App is a simple excel data version control system, the data is organized by project, key and data is stored in seperated table called dbKey and dbData .
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 create table dbKey ( id serial , project_id int, -- keys goes here -- NOTE: key can be 1."/>
 <meta name="application-name" content="Known, Unknown, Unknownable.">
 <meta name="apple-mobile-web-app-title" content="Known, Unknown, Unknownable."><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -27,12 +29,12 @@ planner tend to range over every row in data table to get `rank=1` data, then jo
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
-        "headline": "Optimize a SELECT query up to 60x faster",
+        "headline": "Optimize a PARTITION - SELECT query up to 60x faster",
         "inLanguage": "en",
         "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": "\/idx-only-scan\/"
-        },"image": ["\/images\/Apple-Devices-Preview.png"],"genre": "posts","wordcount":  555 ,
+        },"image": ["\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "performance, PostgreSQL","wordcount":  1001 ,
         "url": "\/idx-only-scan\/","datePublished": "2023-02-12T14:23:03+08:00","dateModified": "2023-02-14T20:34:33+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
             "@type": "Organization",
             "name": "xxxx"},"author": {
@@ -104,10 +106,10 @@ planner tend to range over every row in data table to get `rank=1` data, then jo
                 <div class="container"><div class="toc" id="toc-auto">
             <h2 class="toc-title">Contents</h2>
             <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">Optimize a SELECT query up to 60x faster</h1><div class="post-meta">
+        </div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">Optimize a PARTITION - SELECT query up to 60x faster</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-02-12">2023-02-12</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;555 words&nbsp;
-                <i class="far fa-clock fa-fw" aria-hidden="true"></i>&nbsp;3 minutes&nbsp;<span id="/idx-only-scan/" class="leancloud_visitors" data-flag-title="Optimize a SELECT query up to 60x faster">
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-02-12">2023-02-12</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;1001 words&nbsp;
+                <i class="far fa-clock fa-fw" aria-hidden="true"></i>&nbsp;5 minutes&nbsp;<span id="/idx-only-scan/" class="leancloud_visitors" data-flag-title="Optimize a PARTITION - SELECT query up to 60x faster">
                         <i class="far fa-eye fa-fw" aria-hidden="true"></i>&nbsp;<span class=leancloud-visitors-count></span>&nbsp;views
                     </span>&nbsp;</div>
         </div><div class="details toc" id="toc-static"  data-kept="">
@@ -117,11 +119,128 @@ planner tend to range over every row in data table to get `rank=1` data, then jo
                 </div>
                 <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
   <ul>
-    <li><a href="#identifying-the-root-cause">Identifying the root cause</a></li>
+    <li><a href="#original-query-and-the-use-case">Original Query and the use case</a></li>
+    <li><a href="#identifying-the-root-cause">Identifying the root cause</a>
+      <ul>
+        <li><a href="#useless-index-and-sequential-scan">useless index and Sequential scan</a></li>
+      </ul>
+    </li>
+    <li><a href="#approach-1-materialized-view">Approach 1: Materialized View</a></li>
     <li><a href="#improvement-index-only-scan">Improvement: Index-Only Scan</a></li>
+    <li><a href="#final-choice-i-want-them-all">Final choice: I want them all!</a></li>
   </ul>
 </nav></div>
-            </div><div class="content" id="content"><h2 id="identifying-the-root-cause">Identifying the root cause</h2>
+            </div><div class="content" id="content"><p>This post demonstrates my experience of optimizing a PARTITION - SELECT query,
+and how I made it up to 60x faster.</p>
+<h2 id="original-query-and-the-use-case">Original Query and the use case</h2>
+<p>Our App is a simple excel data version control system,
+the data is organized by project,
+key and data is stored in seperated table called <code>dbKey</code> and <code>dbData</code> .</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">create</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">dbKey</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="nb">serial</span><span class="w"> </span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">project_id</span><span class="w"> </span><span class="nb">int</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">-- keys goes here
+</span></span></span><span class="line"><span class="cl"><span class="c1">-- NOTE: key can be 1...N fields, and we use string.Join(fields, sep)
+</span></span></span><span class="line"><span class="cl"><span class="c1">-- to handle it has the key string in backend service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="nb">text</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">create</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">dbData</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="nb">serial</span><span class="w"> </span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">key_id</span><span class="w"> </span><span class="nb">int</span><span class="w"> </span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="nb">int</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="c1">---  data stores at here
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">);</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>and there&rsquo;s also a sheet_version table that stores the <code>version</code>, <code>timestamp</code> information.</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">create</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">sheet_version</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="nb">serial</span><span class="w"> </span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="nb">int</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">);</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Every time we need to get specific version of data (let&rsquo;s say: version <code>2</code> ), we access <code>sheet_version</code>  table first,
+and get the <code>sheet_version.timestamp</code> to construct the <code>PARTITION - SELECT</code> query.</p>
+<p>To get the actual data, we need to do these steps:</p>
+<ol>
+<li>Partition the data table <code>dbData</code> by <code>key_id</code>,</li>
+<li>Rank it by <code>timestamp (DESC)</code>, get the <code>rank=1</code> datas from <code>dbData</code></li>
+<li>Join <code>dbKey</code> and <code>dbData</code> back togetter.</li>
+</ol>
+<p>Here&rsquo;s the query:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">SELECT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">dbKey</span><span class="p">.</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">finalDBData</span><span class="p">.</span><span class="o">*</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">FROM</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">dbKey</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">SELECT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="o">*</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">rank</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">key_id</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">rank</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">FROM</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">dbData</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="s2">&#34;timestamp&#34;</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">101</span><span class="p">)</span><span class="w"> </span><span class="n">finalDBData</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">where</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">dbKey</span><span class="p">.</span><span class="n">project_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">and</span><span class="w"> </span><span class="n">rank</span><span class="w"> </span><span class="o">=</span><span class="mi">1</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">and</span><span class="w"> </span><span class="n">finalDBData</span><span class="p">.</span><span class="n">key_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dbKey</span><span class="p">.</span><span class="n">id</span><span class="p">;</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Here&rsquo;s the <a href="https://dbfiddle.uk/CKXXlQUE" target="_blank" rel="noopener noreffer ">db&lt;&gt;fiddle</a> you can play with this query.</p>
+<blockquote>
+<p>We choose this design because it can save a lot of space to store every version of data.
+If version <code>2</code> has 10 keys, each key has 50 data,
+and if we change data under only 1 key, we only have to re-insert all data under this modified key.
+and only need to insert <code>50</code> data.
+Of course, this design has some limitations, but in this post, let&rsquo;s focus on the <code>PARTITION - SELECT</code> query optimization.</p>
+</blockquote>
+<h2 id="identifying-the-root-cause">Identifying the root cause</h2>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt"> 1
@@ -138,29 +257,32 @@ planner tend to range over every row in data table to get `rank=1` data, then jo
 </span><span class="lnt">12
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">SELECT
-</span></span><span class="line"><span class="cl"> dbKey.*, finalDBData.*
-</span></span><span class="line"><span class="cl">FROM
-</span></span><span class="line"><span class="cl">    dbKey,
-</span></span><span class="line"><span class="cl">    (
-</span></span><span class="line"><span class="cl">    SELECT
-</span></span><span class="line"><span class="cl">    *,
-</span></span><span class="line"><span class="cl">    rank() OVER (PARTITION BY key_id ORDER BY TIMESTAMP DESC) AS rank
-</span></span><span class="line"><span class="cl">    FROM
-</span></span><span class="line"><span class="cl">    dbData where &#34;timestamp&#34; &lt;= 101) finalDBData
-</span></span><span class="line"><span class="cl">where rank =1 
-</span></span><span class="line"><span class="cl">and finalDBData.key_id = dbKey.id;
-</span></span></code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">SELECT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">dbKey</span><span class="p">.</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">finalDBData</span><span class="p">.</span><span class="o">*</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">FROM</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">dbKey</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">SELECT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="o">*</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">rank</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">key_id</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">rank</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">FROM</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">dbData</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="s2">&#34;timestamp&#34;</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">101</span><span class="p">)</span><span class="w"> </span><span class="n">finalDBData</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">where</span><span class="w"> </span><span class="n">rank</span><span class="w"> </span><span class="o">=</span><span class="mi">1</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">and</span><span class="w"> </span><span class="n">finalDBData</span><span class="p">.</span><span class="n">key_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dbKey</span><span class="p">.</span><span class="n">id</span><span class="p">;</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
 </div>
-</div><p>Because it has to scan the whole <code>dbData</code> table,
-partition it by <code>key_id</code>,
-and rank the timestamp,</p>
-<reason of seq scan>
-planner tend to range over every row in data table to get `rank=1` data, then join it with key table, finally returns it back to client.
-<p>so it&rsquo;s so slow,
+</div><h3 id="useless-index-and-sequential-scan">useless index and Sequential scan</h3>
+<p>This query is slow it has to scan the whole <code>dbData</code> table,
+partition it by <code>key_id</code>, and rank the timestamp,
+planner tends to range over every row in data table to get <code>rank=1</code> data,
+and then join it with key table, finally returns it back to client.
+So this query it&rsquo;s so slow,
 we current have about <code>30000</code> keys in key table, each project has about <code>2000</code> keys, and almost <code>100</code> milion
-data rows in data table.
-It usually takes at least 60 second to get the particular version of data.</p>
+data rows in data table,
+it usually takes at least <code>60</code> second to get the particular version of data.</p>
+<h2 id="approach-1-materialized-view">Approach 1: Materialized View</h2>
+<p>We can use materialized view to cache the result set of particalar version of data,
+but the first one who needs to get data still suffers from the slow query.</p>
 <h2 id="improvement-index-only-scan">Improvement: Index-Only Scan</h2>
 <p>But this query still can be better,</p>
 <p>There&rsquo;s a new feature introduced in PostgreSQL 9.2, which allow us to get data from index itself, without touching the actual table data.</p>
@@ -277,6 +399,9 @@ There are two fundamental restrictions on when this method can be used:</p>
 which satisfied requirement <code>2</code> in the documentation,
 and later when we query <code>dbData</code> , we can still have Index Scan.</p>
 <p>Here&rsquo;s the example <a href="https://explain.dalibo.com/plan/86114340afae7349" target="_blank" rel="noopener noreffer "> query plan </a></p>
+<h2 id="final-choice-i-want-them-all">Final choice: I want them all!</h2>
+<p>We decided to use this optimized query to build the materialized view,
+and maintain a materialized view (we call it <code>mat_view</code> for short) management system to organize the creation, deletion of these mat_views.</p>
 <p>Reference:</p>
 <ul>
 <li><a href="https://wiki.postgresql.org/wiki/Index-only_scans" target="_blank" rel="noopener noreffer ">PostgreSQL Wiki</a></li>
@@ -293,13 +418,13 @@ and later when we query <code>dbData</code> , we can still have Index Scan.</p>
                             <a class="link-to-markdown" href="/idx-only-scan/index.md" target="_blank">Read Markdown</a>
                         </span></div>
             <div class="post-info-share">
-                <span><a href="javascript:void(0);" title="Share on Twitter" data-sharer="twitter" data-url="/idx-only-scan/" data-title="Optimize a SELECT query up to 60x faster"><i class="fab fa-twitter fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="Share on Facebook" data-sharer="facebook" data-url="/idx-only-scan/"><i class="fab fa-facebook-square fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="Share on Hacker News" data-sharer="hackernews" data-url="/idx-only-scan/" data-title="Optimize a SELECT query up to 60x faster"><i class="fab fa-hacker-news fa-fw" aria-hidden="true"></i></a></span>
+                <span><a href="javascript:void(0);" title="Share on Twitter" data-sharer="twitter" data-url="/idx-only-scan/" data-title="Optimize a PARTITION - SELECT query up to 60x faster" data-hashtags="performance,PostgreSQL"><i class="fab fa-twitter fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="Share on Facebook" data-sharer="facebook" data-url="/idx-only-scan/" data-hashtag="performance"><i class="fab fa-facebook-square fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="Share on Hacker News" data-sharer="hackernews" data-url="/idx-only-scan/" data-title="Optimize a PARTITION - SELECT query up to 60x faster"><i class="fab fa-hacker-news fa-fw" aria-hidden="true"></i></a></span>
             </div>
         </div>
     </div>
 
     <div class="post-info-more">
-        <section class="post-tags"></section>
+        <section class="post-tags"><i class="fas fa-tags fa-fw" aria-hidden="true"></i>&nbsp;<a href="/tags/performance/">performance</a>,&nbsp;<a href="/tags/postgresql/">PostgreSQL</a></section>
         <section>
             <span><a href="javascript:void(0);" onclick="window.history.back();">Back</a></span>&nbsp;|&nbsp;<span><a href="/">Home</a></span>
         </section>
