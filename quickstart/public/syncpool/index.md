@@ -1,9 +1,5 @@
----
-title: "Use `sync.Pool` to reduce memory consumption"
-date: 2023-02-13T18:50:03+08:00
-draft: false
-tags: ['sync.Pool', 'performance', 'Go']
----
+# Use `sync.Pool` to reduce memory consumption
+
 
 Experiment:
 

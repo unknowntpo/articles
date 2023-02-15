@@ -4,7 +4,18 @@
         <link>/posts/</link>
         <description>All Posts | Known, Unknown, Unknownable</description>
         <generator>Hugo -- gohugo.io</generator><language>en</language><managingEditor>e850506@gmail.com (unknowntpo)</managingEditor>
-            <webMaster>e850506@gmail.com (unknowntpo)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sun, 12 Feb 2023 14:23:03 &#43;0800</lastBuildDate><atom:link href="/posts/" rel="self" type="application/rss+xml" /><item>
+            <webMaster>e850506@gmail.com (unknowntpo)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Mon, 13 Feb 2023 18:50:03 &#43;0800</lastBuildDate><atom:link href="/posts/" rel="self" type="application/rss+xml" /><item>
+    <title>Use `sync.Pool` to reduce memory consumption</title>
+    <link>/syncpool/</link>
+    <pubDate>Mon, 13 Feb 2023 18:50:03 &#43;0800</pubDate>
+    <author>unknowntpo</author>
+    <guid>/syncpool/</guid>
+    <description><![CDATA[Experiment:
+To demonstrate the improvement of our code, I design a simple benchmark,
+There are three ways we can get data from database.
+Use []Author to hold the data (Structure Binding) Use [][]string to hold the data (Unify Container without sync.Pool) Use [][]string to hold the data, and use sync.Pool to reuse [][]string (Unify Container with sync.Pool) For row number between 1000 and 8000 to demonstrate the benefit of sync.Pool, we use runtime.]]></description>
+</item>
+<item>
     <title>Optimize a SELECT query up to 60x faster</title>
     <link>/idx-only-scan/</link>
     <pubDate>Sun, 12 Feb 2023 14:23:03 &#43;0800</pubDate>
