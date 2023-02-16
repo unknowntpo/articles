@@ -5,7 +5,7 @@ draft: false
 tags: ['sync.Pool', 'performance', 'Go']
 ---
 
-Experiment:
+## Identifying the problem
 
 To demonstrate the improvement of our code, I design a simple benchmark,
 
@@ -15,10 +15,13 @@ There are three ways we can get data from database.
 - Use `[][]string` to hold the data (Unify Container without `sync.Pool`)
 - Use `[][]string` to hold the data, and use sync.Pool to reuse `[][]string` (Unify Container with sync.Pool)
 
-
 For row number between `1000` and `8000`
 to demonstrate the benefit of `sync.Pool`,
 we use `runtime.NumCPU()` worker to perform `runtime.NumCPU()*4` jobs, every job gets all rows from the `author` table
+
+## First attempt: 
+
+## Improvement:
 
 ```
 $ make BENCHTIME=1s
