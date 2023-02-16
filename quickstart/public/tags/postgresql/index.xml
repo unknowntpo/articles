@@ -1,15 +1,15 @@
 <rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
     <channel>
         <title>PostgreSQL - Tag - Known, Unknown, Unknownable</title>
-        <link>/tags/postgresql/</link>
+        <link>https://blog.unknowntpo.me/tags/postgresql/</link>
         <description>PostgreSQL - Tag - Known, Unknown, Unknownable</description>
         <generator>Hugo -- gohugo.io</generator><language>en</language><managingEditor>e850506@gmail.com (unknowntpo)</managingEditor>
-            <webMaster>e850506@gmail.com (unknowntpo)</webMaster><lastBuildDate>Sun, 12 Feb 2023 14:23:03 &#43;0800</lastBuildDate><atom:link href="/tags/postgresql/" rel="self" type="application/rss+xml" /><item>
+            <webMaster>e850506@gmail.com (unknowntpo)</webMaster><lastBuildDate>Sun, 12 Feb 2023 14:23:03 &#43;0800</lastBuildDate><atom:link href="https://blog.unknowntpo.me/tags/postgresql/" rel="self" type="application/rss+xml" /><item>
     <title>Optimize a PARTITION - SELECT query up to 60x faster</title>
-    <link>/idx-only-scan/</link>
+    <link>https://blog.unknowntpo.me/idx-only-scan/</link>
     <pubDate>Sun, 12 Feb 2023 14:23:03 &#43;0800</pubDate>
     <author>unknowntpo</author>
-    <guid>/idx-only-scan/</guid>
+    <guid>https://blog.unknowntpo.me/idx-only-scan/</guid>
     <description><![CDATA[This post demonstrates my experience of optimizing a PARTITION - SELECT query, and how I made it up to 60x faster.
 Original Query and the use case Our App is a simple excel data version control system, the data is organized by project, key and data is stored in seperated table called dbKey and dbData .
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 create table dbKey ( id serial , project_id int, -- keys goes here -- NOTE: key can be 1.]]></description>

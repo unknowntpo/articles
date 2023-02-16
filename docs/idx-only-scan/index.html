@@ -9,12 +9,12 @@
 Original Query and the use case Our App is a simple excel data version control system, the data is organized by project, key and data is stored in seperated table called dbKey and dbData .
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 create table dbKey ( id serial , project_id int, -- keys goes here -- NOTE: key can be 1." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="/idx-only-scan/" /><meta property="og:image" content="/logo.png"/><meta property="article:section" content="posts" />
+<meta property="og:url" content="https://blog.unknowntpo.me/idx-only-scan/" /><meta property="og:image" content="https://blog.unknowntpo.me/logo.png"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2023-02-12T14:23:03+08:00" />
 <meta property="article:modified_time" content="2023-02-16T06:21:09+08:00" /><meta property="og:site_name" content="Known, Unknown, Unknownable." />
 
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:image" content="/logo.png"/>
+<meta name="twitter:image" content="https://blog.unknowntpo.me/logo.png"/>
 
 <meta name="twitter:title" content="Optimize a PARTITION - SELECT query up to 60x faster"/>
 <meta name="twitter:description" content="This post demonstrates my experience of optimizing a PARTITION - SELECT query, and how I made it up to 60x faster.
@@ -23,7 +23,7 @@ Original Query and the use case Our App is a simple excel data version control s
 <meta name="application-name" content="Known, Unknown, Unknownable.">
 <meta name="apple-mobile-web-app-title" content="Known, Unknown, Unknownable."><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="/idx-only-scan/" /><link rel="prev" href="/chatgpt-first-glance/" /><link rel="next" href="/syncpool/" /><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://blog.unknowntpo.me/idx-only-scan/" /><link rel="prev" href="https://blog.unknowntpo.me/chatgpt-first-glance/" /><link rel="next" href="https://blog.unknowntpo.me/syncpool/" /><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
         <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css"></noscript><link rel="preload" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
         <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css"></noscript><script type="application/ld+json">
     {
@@ -33,9 +33,9 @@ Original Query and the use case Our App is a simple excel data version control s
         "inLanguage": "en",
         "mainEntityOfPage": {
             "@type": "WebPage",
-            "@id": "\/idx-only-scan\/"
-        },"image": ["\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "performance, PostgreSQL","wordcount":  1001 ,
-        "url": "\/idx-only-scan\/","datePublished": "2023-02-12T14:23:03+08:00","dateModified": "2023-02-16T06:21:09+08:00","publisher": {
+            "@id": "https:\/\/blog.unknowntpo.me\/idx-only-scan\/"
+        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "performance, PostgreSQL","wordcount":  1001 ,
+        "url": "https:\/\/blog.unknowntpo.me\/idx-only-scan\/","datePublished": "2023-02-12T14:23:03+08:00","dateModified": "2023-02-16T06:21:09+08:00","publisher": {
             "@type": "Organization",
             "name": "xxxx"},"author": {
                 "@type": "Person",
@@ -51,7 +51,7 @@ Original Query and the use case Our App is a simple excel data version control s
             <a href="/" title="Known, Unknown, Unknownable"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw' aria-hidden='true'></i></span>Known, Unknown, Unknownable.</a>
         </div>
         <div class="menu">
-            <div class="menu-inner"><a class="menu-item" href="/posts/"> Posts </a><a class="menu-item" href="/tags/"> Tags </a><a class="menu-item" href="/categories/"> Categories </a><a class="menu-item" href="/https:/github.com/unknowntpo/"><i class='fab fa-github fa-fw' aria-hidden='true'></i> Github </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> Posts </a><a class="menu-item" href="/tags/"> Tags </a><a class="menu-item" href="/categories/"> Categories </a><a class="menu-item" href="https://github.com/unknowntpo/" rel="noopener noreffer" target="_blank"><i class='fab fa-github fa-fw' aria-hidden='true'></i> Github </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
                         <input type="text" placeholder="Search titles or contents..." id="search-input-desktop">
                         <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="Search">
                             <i class="fas fa-search fa-fw" aria-hidden="true"></i>
@@ -93,7 +93,7 @@ Original Query and the use case Our App is a simple excel data version control s
                     <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
                         Cancel
                     </a>
-                </div><a class="menu-item" href="/posts/" title="">Posts</a><a class="menu-item" href="/tags/" title="">Tags</a><a class="menu-item" href="/categories/" title="">Categories</a><a class="menu-item" href="/https:/github.com/unknowntpo/" title=""><i class='fab fa-github fa-fw' aria-hidden='true'></i>Github</a><a href="javascript:void(0);" class="menu-item theme-switch" title="Switch Theme">
+                </div><a class="menu-item" href="/posts/" title="">Posts</a><a class="menu-item" href="/tags/" title="">Tags</a><a class="menu-item" href="/categories/" title="">Categories</a><a class="menu-item" href="https://github.com/unknowntpo/" title="" rel="noopener noreffer" target="_blank"><i class='fab fa-github fa-fw' aria-hidden='true'></i>Github</a><a href="javascript:void(0);" class="menu-item theme-switch" title="Switch Theme">
                 <i class="fas fa-adjust fa-fw" aria-hidden="true"></i>
             </a></div>
     </div>
@@ -418,7 +418,7 @@ and maintain a materialized view (we call it <code>mat_view</code> for short) ma
                             <a class="link-to-markdown" href="/idx-only-scan/index.md" target="_blank">Read Markdown</a>
                         </span></div>
             <div class="post-info-share">
-                <span><a href="javascript:void(0);" title="Share on Twitter" data-sharer="twitter" data-url="/idx-only-scan/" data-title="Optimize a PARTITION - SELECT query up to 60x faster" data-hashtags="performance,PostgreSQL"><i class="fab fa-twitter fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="Share on Facebook" data-sharer="facebook" data-url="/idx-only-scan/" data-hashtag="performance"><i class="fab fa-facebook-square fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="Share on Hacker News" data-sharer="hackernews" data-url="/idx-only-scan/" data-title="Optimize a PARTITION - SELECT query up to 60x faster"><i class="fab fa-hacker-news fa-fw" aria-hidden="true"></i></a></span>
+                <span><a href="javascript:void(0);" title="Share on Twitter" data-sharer="twitter" data-url="https://blog.unknowntpo.me/idx-only-scan/" data-title="Optimize a PARTITION - SELECT query up to 60x faster" data-hashtags="performance,PostgreSQL"><i class="fab fa-twitter fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="Share on Facebook" data-sharer="facebook" data-url="https://blog.unknowntpo.me/idx-only-scan/" data-hashtag="performance"><i class="fab fa-facebook-square fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="Share on Hacker News" data-sharer="hackernews" data-url="https://blog.unknowntpo.me/idx-only-scan/" data-title="Optimize a PARTITION - SELECT query up to 60x faster"><i class="fab fa-hacker-news fa-fw" aria-hidden="true"></i></a></span>
             </div>
         </div>
     </div>

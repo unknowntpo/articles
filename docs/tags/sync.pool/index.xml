@@ -1,15 +1,15 @@
 <rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
     <channel>
         <title>sync.Pool - Tag - Known, Unknown, Unknownable</title>
-        <link>/tags/sync.pool/</link>
+        <link>https://blog.unknowntpo.me/tags/sync.pool/</link>
         <description>sync.Pool - Tag - Known, Unknown, Unknownable</description>
         <generator>Hugo -- gohugo.io</generator><language>en</language><managingEditor>e850506@gmail.com (unknowntpo)</managingEditor>
-            <webMaster>e850506@gmail.com (unknowntpo)</webMaster><lastBuildDate>Mon, 13 Feb 2023 18:50:03 &#43;0800</lastBuildDate><atom:link href="/tags/sync.pool/" rel="self" type="application/rss+xml" /><item>
+            <webMaster>e850506@gmail.com (unknowntpo)</webMaster><lastBuildDate>Mon, 13 Feb 2023 18:50:03 &#43;0800</lastBuildDate><atom:link href="https://blog.unknowntpo.me/tags/sync.pool/" rel="self" type="application/rss+xml" /><item>
     <title>Use `sync.Pool` to reduce memory consumption</title>
-    <link>/syncpool/</link>
+    <link>https://blog.unknowntpo.me/syncpool/</link>
     <pubDate>Mon, 13 Feb 2023 18:50:03 &#43;0800</pubDate>
     <author>unknowntpo</author>
-    <guid>/syncpool/</guid>
+    <guid>https://blog.unknowntpo.me/syncpool/</guid>
     <description><![CDATA[Identifying the problem To demonstrate the improvement of our code, I design a simple benchmark,
 There are three ways we can get data from database.
 Use []Author to hold the data (Structure Binding) Use [][]string to hold the data (Unify Container without sync.Pool) Use [][]string to hold the data, and use sync.Pool to reuse [][]string (Unify Container with sync.Pool) For row number between 1000 and 8000 to demonstrate the benefit of sync.]]></description>

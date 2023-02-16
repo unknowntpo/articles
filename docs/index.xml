@@ -1,55 +1,55 @@
 <rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
     <channel>
         <title>Known, Unknown, Unknownable</title>
-        <link>/</link>
+        <link>https://blog.unknowntpo.me/</link>
         <description>My secret universe</description>
         <generator>Hugo -- gohugo.io</generator><language>en</language><managingEditor>e850506@gmail.com (unknowntpo)</managingEditor>
             <webMaster>e850506@gmail.com (unknowntpo)</webMaster><lastBuildDate>Mon, 13 Feb 2023 18:50:03 &#43;0800</lastBuildDate>
-            <atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+            <atom:link href="https://blog.unknowntpo.me/index.xml" rel="self" type="application/rss+xml" />
         <item>
     <title>Use `sync.Pool` to reduce memory consumption</title>
-    <link>/syncpool/</link>
+    <link>https://blog.unknowntpo.me/syncpool/</link>
     <pubDate>Mon, 13 Feb 2023 18:50:03 &#43;0800</pubDate>
     <author>unknowntpo</author>
-    <guid>/syncpool/</guid>
+    <guid>https://blog.unknowntpo.me/syncpool/</guid>
     <description><![CDATA[Identifying the problem To demonstrate the improvement of our code, I design a simple benchmark,
 There are three ways we can get data from database.
 Use []Author to hold the data (Structure Binding) Use [][]string to hold the data (Unify Container without sync.Pool) Use [][]string to hold the data, and use sync.Pool to reuse [][]string (Unify Container with sync.Pool) For row number between 1000 and 8000 to demonstrate the benefit of sync.]]></description>
 </item>
 <item>
     <title>Optimize a PARTITION - SELECT query up to 60x faster</title>
-    <link>/idx-only-scan/</link>
+    <link>https://blog.unknowntpo.me/idx-only-scan/</link>
     <pubDate>Sun, 12 Feb 2023 14:23:03 &#43;0800</pubDate>
     <author>unknowntpo</author>
-    <guid>/idx-only-scan/</guid>
+    <guid>https://blog.unknowntpo.me/idx-only-scan/</guid>
     <description><![CDATA[This post demonstrates my experience of optimizing a PARTITION - SELECT query, and how I made it up to 60x faster.
 Original Query and the use case Our App is a simple excel data version control system, the data is organized by project, key and data is stored in seperated table called dbKey and dbData .
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 create table dbKey ( id serial , project_id int, -- keys goes here -- NOTE: key can be 1.]]></description>
 </item>
 <item>
     <title>ChatGPT First Glance</title>
-    <link>/chatgpt-first-glance/</link>
+    <link>https://blog.unknowntpo.me/chatgpt-first-glance/</link>
     <pubDate>Sat, 21 Jan 2023 12:00:58 &#43;0800</pubDate>
     <author>unknowntpo</author>
-    <guid>/chatgpt-first-glance/</guid>
+    <guid>https://blog.unknowntpo.me/chatgpt-first-glance/</guid>
     <description><![CDATA[This is my first glance of ChatGPT, and I ask her to generate a peice of code in Haskell, which can map a function to a list.
 The result she generated is totally correct, and can be run in playground.
 1 2 3 4 5 6 7 8 9 10 11 12 addOneToEach :: [Int] -&gt; [Int] addOneToEach xs = map (+1) xs myMap :: (a -&gt; b) -&gt; [a] -&gt; [b] myMap _ [] = [] myMap f (x:xs) = f x : myMap f xs main = do let myList = [1, 2, 3, 4] let doubledList = myMap (*2) myList print doubledList -- Output: [2,4,6,8] Here&rsquo;s the link to our chat: https://sharegpt.]]></description>
 </item>
 <item>
     <title>My First Post</title>
-    <link>/my-first-post/</link>
+    <link>https://blog.unknowntpo.me/my-first-post/</link>
     <pubDate>Sun, 08 Jan 2023 19:38:19 &#43;0800</pubDate>
     <author>unknowntpo</author>
-    <guid>/my-first-post/</guid>
+    <guid>https://blog.unknowntpo.me/my-first-post/</guid>
     <description><![CDATA[Hello, This is my first time trying Hugo! Inline Formula: 1 SELECT &#39;hello-world&#39; FROM me Block Formula:]]></description>
 </item>
 <item>
     <title>About me</title>
-    <link>/about/</link>
+    <link>https://blog.unknowntpo.me/about/</link>
     <pubDate>Sun, 08 Jan 2023 15:38:19 &#43;0800</pubDate>
     <author>unknowntpo</author>
-    <guid>/about/</guid>
+    <guid>https://blog.unknowntpo.me/about/</guid>
     <description><![CDATA[I am unknowntpo, a Backend Software Engineer. ]]></description>
 </item>
 </channel>
