@@ -84,6 +84,14 @@ ignoreErrors = ["error-remote-getjson", "error-missing-instagram-accesstoken"]
     name = "Categories"
     url = "/categories/"
     title = ""
+  [[menu.main]]
+    weight = 4
+    identifier = "github"
+    pre = "<i class='fab fa-github fa-fw' aria-hidden='true'></i>"
+    post = ""
+    name = "Github"
+    url = "https://github.com/unknowntpo/"
+    title = ""
 
 [params]
   # site default theme ["auto", "light", "dark"]
@@ -715,91 +723,91 @@ ignoreErrors = ["error-remote-getjson", "error-missing-instagram-accesstoken"]
   taxonomy = ["HTML", "RSS"]
   taxonomyTerm = ["HTML"]
 
-# Multilingual
-# 多语言
-[languages]
-  [languages.en]
-    weight = 1
-    languageCode = "en"
-    languageName = "English"
-    hasCJKLanguage = false
-    copyright = "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License."
-    [languages.en.menu]
-      [[languages.en.menu.main]]
-        weight = 1
-        identifier = "posts"
-        pre = ""
-        post = ""
-        name = "Posts"
-        url = "/posts/"
-        title = ""
-      [[languages.en.menu.main]]
-        weight = 2
-        identifier = "tags"
-        pre = ""
-        post = ""
-        name = "Tags"
-        url = "/tags/"
-        title = ""
-      [[languages.en.menu.main]]
-        weight = 3
-        identifier = "categories"
-        pre = ""
-        post = ""
-        name = "Categories"
-        url = "/categories/"
-        title = ""
-      [[languages.en.menu.main]]
-        weight = 5
-        identifier = "about"
-        pre = ""
-        post = ""
-        name = "About"
-        url = "/about/"
-        title = "About me"
-      [[languages.en.menu.main]]
-        weight = 6
-        identifier = "github"
-        pre = "<i class='fab fa-github fa-fw' aria-hidden='true'></i>"
-        post = ""
-        name = ""
-        url = "https://github.com/unknowntpo"
-        title = "GitHub"
-    [languages.en.params]
-      [languages.en.params.search]
-        enable = true
-        type = "algolia"
-        contentLength = 4000
-        placeholder = ""
-        maxResultLength = 10
-        snippetLength = 30
-        highlightTag = "em"
-        absoluteURL = false
-        [languages.en.params.search.algolia]
-          index = "index.en"
-          appID = "PASDMWALPK"
-          searchKey = "b42948e51daaa93df92381c8e2ac0f93"
-      [languages.en.params.home]
-        rss = 10
-        [languages.en.params.home.profile]
-          enable = true
-          gravatarEmail = ""
-          avatarURL = ""
-          title = ""
-          subtitle = "My lovely universe."
-          typeit = true
-          social = true
-          disclaimer = ""
-      [languages.en.params.social]
-        GitHub = "unknowntpo"
-        Twitter = ""
-        Instagram = ""
-        Facebook = ""
-        Telegram = ""
-        Youtubelegacy = ""
-        Phone = "555-555-555"
-        Email = "e850506@gmail.com"
-        RSS = true
-        [languages.en.params.social.Mastodon]
-          id = ""
-          prefix = "https://mastodon.technology/"
+# # Multilingual
+# # 多语言
+# [languages]
+#   [languages.en]
+#     weight = 1
+#     languageCode = "en"
+#     languageName = "English"
+#     hasCJKLanguage = false
+#     copyright = "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License."
+#     [languages.en.menu]
+#       [[languages.en.menu.main]]
+#         weight = 1
+#         identifier = "posts"
+#         pre = ""
+#         post = ""
+#         name = "Posts"
+#         url = "/posts/"
+#         title = ""
+#       [[languages.en.menu.main]]
+#         weight = 2
+#         identifier = "tags"
+#         pre = ""
+#         post = ""
+#         name = "Tags"
+#         url = "/tags/"
+#         title = ""
+#       [[languages.en.menu.main]]
+#         weight = 3
+#         identifier = "categories"
+#         pre = ""
+#         post = ""
+#         name = "Categories"
+#         url = "/categories/"
+#         title = ""
+#       [[languages.en.menu.main]]
+#         weight = 5
+#         identifier = "about"
+#         pre = ""
+#         post = ""
+#         name = "About"
+#         url = "/about/"
+#         title = "About me"
+#       [[languages.en.menu.main]]
+#         weight = 6
+#         identifier = "github"
+#         pre = "<i class='fab fa-github fa-fw' aria-hidden='true'></i>"
+#         post = ""
+#         name = ""
+#         url = "https://github.com/unknowntpo/"
+#         title = "GitHub"
+#     [languages.en.params]
+#       [languages.en.params.search]
+#         enable = true
+#         type = "algolia"
+#         contentLength = 4000
+#         placeholder = ""
+#         maxResultLength = 10
+#         snippetLength = 30
+#         highlightTag = "em"
+#         absoluteURL = false
+#         [languages.en.params.search.algolia]
+#           index = "index.en"
+#           appID = "PASDMWALPK"
+#           searchKey = "b42948e51daaa93df92381c8e2ac0f93"
+#       [languages.en.params.home]
+#         rss = 10
+#         [languages.en.params.home.profile]
+#           enable = true
+#           gravatarEmail = ""
+#           avatarURL = ""
+#           title = ""
+#           subtitle = "My lovely universe."
+#           typeit = true
+#           social = true
+#           disclaimer = ""
+#       [languages.en.params.social]
+#         GitHub = "unknowntpo"
+#         Twitter = ""
+#         Instagram = ""
+#         Facebook = ""
+#         Telegram = ""
+#         Youtubelegacy = ""
+#         Phone = "555-555-555"
+#         Email = "e850506@gmail.com"
+#         RSS = true
+#         [languages.en.params.social.Mastodon]
+#           id = ""
+#           prefix = "https://mastodon.technology/"

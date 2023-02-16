@@ -4,7 +4,7 @@
         <link>/tags/sync.pool/</link>
         <description>sync.Pool - Tag - Known, Unknown, Unknownable</description>
         <generator>Hugo -- gohugo.io</generator><language>en</language><managingEditor>e850506@gmail.com (unknowntpo)</managingEditor>
-            <webMaster>e850506@gmail.com (unknowntpo)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Mon, 13 Feb 2023 18:50:03 &#43;0800</lastBuildDate><atom:link href="/tags/sync.pool/" rel="self" type="application/rss+xml" /><item>
+            <webMaster>e850506@gmail.com (unknowntpo)</webMaster><lastBuildDate>Mon, 13 Feb 2023 18:50:03 &#43;0800</lastBuildDate><atom:link href="/tags/sync.pool/" rel="self" type="application/rss+xml" /><item>
     <title>Use `sync.Pool` to reduce memory consumption</title>
     <link>/syncpool/</link>
     <pubDate>Mon, 13 Feb 2023 18:50:03 &#43;0800</pubDate>
