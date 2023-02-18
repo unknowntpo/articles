@@ -5,9 +5,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
         <title>Use `sync.Pool` to reduce memory consumption - Known, Unknown, Unknownable</title><meta name="Description" content="My secret universe"><meta property="og:title" content="Use `sync.Pool` to reduce memory consumption" />
-<meta property="og:description" content="Identifying the problem To demonstrate the improvement of our code, I design a simple benchmark,
-There are three ways we can get data from database.
-Use []Author to hold the data (Structure Binding) Use [][]string to hold the data (Unify Container without sync.Pool) Use [][]string to hold the data, and use sync.Pool to reuse [][]string (Unify Container with sync.Pool) For row number between 1000 and 8000 to demonstrate the benefit of sync." />
+<meta property="og:description" content="Identifying the problem Our service is like a excel document datastore. and we use xorm as ORM framework, Everytime we need to get data from DB, we call session.Find(&amp;[]Author{}) with the slice of table beans, but this have some problem,
+Golang&rsquo;s reflect is slow Memory allocation is very high. So every time lots of clients try to download excel file, the memory consumption is too high, and downloadling excel file takes too long to complete." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://blog.unknowntpo.me/syncpool/" /><meta property="og:image" content="https://blog.unknowntpo.me/logo.png"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2023-02-13T18:50:03+08:00" />
@@ -17,9 +16,8 @@ Use []Author to hold the data (Structure Binding) Use [][]string to hold the dat
 <meta name="twitter:image" content="https://blog.unknowntpo.me/logo.png"/>
 
 <meta name="twitter:title" content="Use `sync.Pool` to reduce memory consumption"/>
-<meta name="twitter:description" content="Identifying the problem To demonstrate the improvement of our code, I design a simple benchmark,
-There are three ways we can get data from database.
-Use []Author to hold the data (Structure Binding) Use [][]string to hold the data (Unify Container without sync.Pool) Use [][]string to hold the data, and use sync.Pool to reuse [][]string (Unify Container with sync.Pool) For row number between 1000 and 8000 to demonstrate the benefit of sync."/>
+<meta name="twitter:description" content="Identifying the problem Our service is like a excel document datastore. and we use xorm as ORM framework, Everytime we need to get data from DB, we call session.Find(&amp;[]Author{}) with the slice of table beans, but this have some problem,
+Golang&rsquo;s reflect is slow Memory allocation is very high. So every time lots of clients try to download excel file, the memory consumption is too high, and downloadling excel file takes too long to complete."/>
 <meta name="application-name" content="Known, Unknown, Unknownable.">
 <meta name="apple-mobile-web-app-title" content="Known, Unknown, Unknownable."><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -34,7 +32,7 @@ Use []Author to hold the data (Structure Binding) Use [][]string to hold the dat
         "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": "https:\/\/blog.unknowntpo.me\/syncpool\/"
-        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "sync.Pool, performance, Go","wordcount":  422 ,
+        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "sync.Pool, performance, Go","wordcount":  494 ,
         "url": "https:\/\/blog.unknowntpo.me\/syncpool\/","datePublished": "2023-02-13T18:50:03+08:00","dateModified": "2023-02-16T19:32:22+08:00","publisher": {
             "@type": "Organization",
             "name": "xxxx"},"author": {
@@ -108,8 +106,8 @@ Use []Author to hold the data (Structure Binding) Use [][]string to hold the dat
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">Use `sync.Pool` to reduce memory consumption</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-02-13">2023-02-13</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;422 words&nbsp;
-                <i class="far fa-clock fa-fw" aria-hidden="true"></i>&nbsp;2 minutes&nbsp;<span id="/syncpool/" class="leancloud_visitors" data-flag-title="Use `sync.Pool` to reduce memory consumption">
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-02-13">2023-02-13</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;494 words&nbsp;
+                <i class="far fa-clock fa-fw" aria-hidden="true"></i>&nbsp;3 minutes&nbsp;<span id="/syncpool/" class="leancloud_visitors" data-flag-title="Use `sync.Pool` to reduce memory consumption">
                         <i class="far fa-eye fa-fw" aria-hidden="true"></i>&nbsp;<span class=leancloud-visitors-count></span>&nbsp;views
                     </span>&nbsp;</div>
         </div><div class="details toc" id="toc-static"  data-kept="">
@@ -121,10 +119,22 @@ Use []Author to hold the data (Structure Binding) Use [][]string to hold the dat
   <ul>
     <li><a href="#identifying-the-problem">Identifying the problem</a></li>
     <li><a href="#first-attempt">First attempt:</a></li>
-    <li><a href="#improvement">Improvement:</a></li>
+    <li><a href="#experiment">Experiment:</a></li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><h2 id="identifying-the-problem">Identifying the problem</h2>
+<p>Our service is like a excel document datastore.
+and we use <code>xorm</code> as ORM framework,
+Everytime we need to get data from DB, we call <code>session.Find(&amp;[]Author{})</code> with the slice of table beans,
+but this have some problem,</p>
+<ol>
+<li>Golang&rsquo;s <code>reflect</code> is slow</li>
+<li>Memory allocation is very high.</li>
+</ol>
+<p>So every time lots of clients try to download excel file,
+the memory consumption is too high, and downloadling excel file takes too long to complete.</p>
+<h2 id="first-attempt">First attempt:</h2>
+<h2 id="experiment">Experiment:</h2>
 <p>To demonstrate the improvement of our code, I design a simple benchmark,</p>
 <p>There are three ways we can get data from database.</p>
 <ul>
@@ -135,8 +145,6 @@ Use []Author to hold the data (Structure Binding) Use [][]string to hold the dat
 <p>For row number between <code>1000</code> and <code>8000</code>
 to demonstrate the benefit of <code>sync.Pool</code>,
 we use <code>runtime.NumCPU()</code> worker to perform <code>runtime.NumCPU()*4</code> jobs, every job gets all rows from the <code>author</code> table</p>
-<h2 id="first-attempt">First attempt:</h2>
-<h2 id="improvement">Improvement:</h2>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt"> 1

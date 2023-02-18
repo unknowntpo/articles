@@ -7,6 +7,21 @@ tags: ['sync.Pool', 'performance', 'Go']
 
 ## Identifying the problem
 
+Our service is like a excel document datastore.
+and we use `xorm` as ORM framework,
+Everytime we need to get data from DB, we call `session.Find(&[]Author{})` with the slice of table beans,
+but this have some problem,
+
+1. Golang's `reflect` is slow
+2. Memory allocation is very high.
+
+So every time lots of clients try to download excel file,
+the memory consumption is too high, and downloadling excel file takes too long to complete.
+
+## First attempt: 
+
+## Experiment:
+
 To demonstrate the improvement of our code, I design a simple benchmark,
 
 There are three ways we can get data from database.
@@ -19,9 +34,6 @@ For row number between `1000` and `8000`
 to demonstrate the benefit of `sync.Pool`,
 we use `runtime.NumCPU()` worker to perform `runtime.NumCPU()*4` jobs, every job gets all rows from the `author` table
 
-## First attempt: 
-
-## Improvement:
 
 ```
 $ make BENCHTIME=1s

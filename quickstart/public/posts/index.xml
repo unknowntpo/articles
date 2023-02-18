@@ -10,9 +10,8 @@
     <pubDate>Mon, 13 Feb 2023 18:50:03 &#43;0800</pubDate>
     <author>unknowntpo</author>
     <guid>https://blog.unknowntpo.me/syncpool/</guid>
-    <description><![CDATA[Identifying the problem To demonstrate the improvement of our code, I design a simple benchmark,
-There are three ways we can get data from database.
-Use []Author to hold the data (Structure Binding) Use [][]string to hold the data (Unify Container without sync.Pool) Use [][]string to hold the data, and use sync.Pool to reuse [][]string (Unify Container with sync.Pool) For row number between 1000 and 8000 to demonstrate the benefit of sync.]]></description>
+    <description><![CDATA[Identifying the problem Our service is like a excel document datastore. and we use xorm as ORM framework, Everytime we need to get data from DB, we call session.Find(&amp;[]Author{}) with the slice of table beans, but this have some problem,
+Golang&rsquo;s reflect is slow Memory allocation is very high. So every time lots of clients try to download excel file, the memory consumption is too high, and downloadling excel file takes too long to complete.]]></description>
 </item>
 <item>
     <title>Optimize a PARTITION - SELECT query up to 60x faster</title>
