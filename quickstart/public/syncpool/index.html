@@ -10,7 +10,7 @@ Golang&rsquo;s reflect is slow Memory allocation is very high. So every time lot
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://blog.unknowntpo.me/syncpool/" /><meta property="og:image" content="https://blog.unknowntpo.me/logo.png"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2023-02-13T18:50:03+08:00" />
-<meta property="article:modified_time" content="2023-02-16T19:32:22+08:00" /><meta property="og:site_name" content="Known, Unknown, Unknownable." />
+<meta property="article:modified_time" content="2023-02-18T19:14:37+08:00" /><meta property="og:site_name" content="Known, Unknown, Unknownable." />
 
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://blog.unknowntpo.me/logo.png"/>
@@ -32,8 +32,8 @@ Golang&rsquo;s reflect is slow Memory allocation is very high. So every time lot
         "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": "https:\/\/blog.unknowntpo.me\/syncpool\/"
-        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "sync.Pool, performance, Go","wordcount":  494 ,
-        "url": "https:\/\/blog.unknowntpo.me\/syncpool\/","datePublished": "2023-02-13T18:50:03+08:00","dateModified": "2023-02-16T19:32:22+08:00","publisher": {
+        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "sync.Pool, performance, Go","wordcount":  619 ,
+        "url": "https:\/\/blog.unknowntpo.me\/syncpool\/","datePublished": "2023-02-13T18:50:03+08:00","dateModified": "2023-02-18T19:14:37+08:00","publisher": {
             "@type": "Organization",
             "name": "xxxx"},"author": {
                 "@type": "Person",
@@ -106,7 +106,7 @@ Golang&rsquo;s reflect is slow Memory allocation is very high. So every time lot
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">Use `sync.Pool` to reduce memory consumption</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-02-13">2023-02-13</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;494 words&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-02-13">2023-02-13</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;619 words&nbsp;
                 <i class="far fa-clock fa-fw" aria-hidden="true"></i>&nbsp;3 minutes&nbsp;<span id="/syncpool/" class="leancloud_visitors" data-flag-title="Use `sync.Pool` to reduce memory consumption">
                         <i class="far fa-eye fa-fw" aria-hidden="true"></i>&nbsp;<span class=leancloud-visitors-count></span>&nbsp;views
                     </span>&nbsp;</div>
@@ -118,7 +118,8 @@ Golang&rsquo;s reflect is slow Memory allocation is very high. So every time lot
                 <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
   <ul>
     <li><a href="#identifying-the-problem">Identifying the problem</a></li>
-    <li><a href="#first-attempt">First attempt:</a></li>
+    <li><a href="#first-attempt">First: attempt:</a></li>
+    <li><a href="#step-2-use-syncpool-to-reduce-memory-allocation">Step 2: Use sync.Pool to reduce memory allocation</a></li>
     <li><a href="#experiment">Experiment:</a></li>
   </ul>
 </nav></div>
@@ -133,8 +134,61 @@ but this have some problem,</p>
 </ol>
 <p>So every time lots of clients try to download excel file,
 the memory consumption is too high, and downloadling excel file takes too long to complete.</p>
-<h2 id="first-attempt">First attempt:</h2>
-<h2 id="experiment">Experiment:</h2>
+<h2 id="first-attempt">First: attempt:</h2>
+<p>We can observe the code, and</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">session</span> <span class="o">*</span><span class="nx">Session</span><span class="p">)</span> <span class="nf">find</span><span class="p">(</span><span class="nx">rowsSlicePtr</span> <span class="kd">interface</span><span class="p">{},</span> <span class="nx">condiBean</span> <span class="o">...</span><span class="kd">interface</span><span class="p">{})</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">session</span> <span class="o">*</span><span class="nx">Session</span><span class="p">)</span> <span class="nf">noCacheFind</span><span class="p">(</span><span class="nx">table</span> <span class="o">*</span><span class="nx">schemas</span><span class="p">.</span><span class="nx">Table</span><span class="p">,</span> <span class="nx">containerValue</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Value</span><span class="p">,</span> <span class="nx">sqlStr</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">args</span> <span class="o">...</span><span class="kd">interface</span><span class="p">{})</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="step-2-use-syncpool-to-reduce-memory-allocation">Step 2: Use sync.Pool to reduce memory allocation</h2>
+<p>The solution I came out is very simple, if memory allocation is time-consuming,
+why don&rsquo;t we reuse the data structure in memory ? In this case,
+we&rsquo;re using <code>[][]string</code></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">var unifyContainerRowPool = sync.Pool{
+</span></span><span class="line"><span class="cl">	New: func() interface{} {
+</span></span><span class="line"><span class="cl">		conRow := make([]string, DefaultContainerColLen)
+</span></span><span class="line"><span class="cl">		conRow = resetUnifyContainerRow(conRow)
+</span></span><span class="line"><span class="cl">		return conRow[:0]
+</span></span><span class="line"><span class="cl">	},
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">var unifyContainerPool = sync.Pool{
+</span></span><span class="line"><span class="cl">	New: func() interface{} {
+</span></span><span class="line"><span class="cl">		// fmt.Println(&#34;New is called for unifyContainerPool&#34;)
+</span></span><span class="line"><span class="cl">		con := make([][]string, 0, DefaultContainerRowLen)
+</span></span><span class="line"><span class="cl">		return con
+</span></span><span class="line"><span class="cl">	},
+</span></span><span class="line"><span class="cl">}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="experiment">Experiment:</h2>
 <p>To demonstrate the improvement of our code, I design a simple benchmark,</p>
 <p>There are three ways we can get data from database.</p>
 <ul>
@@ -236,8 +290,8 @@ and compare to the one without <code>sync.Pool</code>, and because memory alloca
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
-                <span>Updated on 2023-02-16&nbsp;<a class="git-hash" href="https://github.com/unknowntpo/commit/c7b82900347d6c9e6da4fbdce60e4c0da85f95dc" target="_blank" title="commit by unknowntpo(e850506@gmail.com) c7b82900347d6c9e6da4fbdce60e4c0da85f95dc: tweak post from sync.Pool">
-                                    <i class="fas fa-hashtag fa-fw" aria-hidden="true"></i>c7b8290</a></span>
+                <span>Updated on 2023-02-18&nbsp;<a class="git-hash" href="https://github.com/unknowntpo/commit/bfaa140c5a217359ede768a4263567b1586add20" target="_blank" title="commit by unknowntpo(e850506@gmail.com) bfaa140c5a217359ede768a4263567b1586add20: Tweak sync.Pool article">
+                                    <i class="fas fa-hashtag fa-fw" aria-hidden="true"></i>bfaa140</a></span>
             </div></div>
         <div class="post-info-line">
             <div class="post-info-md"><span>

@@ -14,7 +14,40 @@ but this have some problem,
 So every time lots of clients try to download excel file,
 the memory consumption is too high, and downloadling excel file takes too long to complete.
 
-## First attempt: 
+## First: attempt: 
+
+We can observe the code, and
+
+```go
+func (session *Session) find(rowsSlicePtr interface{}, condiBean ...interface{}) error {
+
+func (session *Session) noCacheFind(table *schemas.Table, containerValue reflect.Value, sqlStr string, args ...interface{}) error {
+```
+
+
+## Step 2: Use sync.Pool to reduce memory allocation
+
+The solution I came out is very simple, if memory allocation is time-consuming,
+why don't we reuse the data structure in memory ? In this case,
+we're using `[][]string`
+
+```
+var unifyContainerRowPool = sync.Pool{
+	New: func() interface{} {
+		conRow := make([]string, DefaultContainerColLen)
+		conRow = resetUnifyContainerRow(conRow)
+		return conRow[:0]
+	},
+}
+
+var unifyContainerPool = sync.Pool{
+	New: func() interface{} {
+		// fmt.Println("New is called for unifyContainerPool")
+		con := make([][]string, 0, DefaultContainerRowLen)
+		return con
+	},
+}
+```
 
 ## Experiment:
 
