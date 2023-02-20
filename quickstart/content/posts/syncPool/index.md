@@ -10,23 +10,27 @@ tags: ['sync.Pool', 'performance', 'Go']
 Our service is like a excel document datastore.
 and we use `xorm` as ORM framework,
 Everytime we need to get data from DB, we call `session.Find(&[]Author{})` with the slice of table beans,
-but this have some problem,
+but this have a problem,
 
-1. Golang's `reflect` is slow
-2. Memory allocation is very high.
+- Memory allocation is very high
 
 So every time lots of clients try to download excel file,
 the memory consumption is too high, and downloadling excel file takes too long to complete.
 
-## First: attempt: 
+### Find the root cause with pprof
 
-We can observe the code, and
+I wrote a benchmark and by leveraging GO's pprof profiling tool, we can easily check out the flamegraph
+using some tool like pyroscope.
 
-```go
-func (session *Session) find(rowsSlicePtr interface{}, condiBean ...interface{}) error {
+Here's the result we got:
 
-func (session *Session) noCacheFind(table *schemas.Table, containerValue reflect.Value, sqlStr string, args ...interface{}) error {
-```
+#### CPU
+
+![Structure-Binding-cpu](StructureBinding_cpu.png)
+
+#### Memory
+![Structure-Binding-mem](StructureBinding_mem.png)
+
 
 
 ## Step 2: Use sync.Pool to reduce memory allocation

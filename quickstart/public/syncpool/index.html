@@ -5,19 +5,19 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
         <title>Use `sync.Pool` to reduce memory consumption - Known, Unknown, Unknownable</title><meta name="Description" content="My secret universe"><meta property="og:title" content="Use `sync.Pool` to reduce memory consumption" />
-<meta property="og:description" content="Identifying the problem Our service is like a excel document datastore. and we use xorm as ORM framework, Everytime we need to get data from DB, we call session.Find(&amp;[]Author{}) with the slice of table beans, but this have some problem,
-Golang&rsquo;s reflect is slow Memory allocation is very high. So every time lots of clients try to download excel file, the memory consumption is too high, and downloadling excel file takes too long to complete." />
+<meta property="og:description" content="Identifying the problem Our service is like a excel document datastore. and we use xorm as ORM framework, Everytime we need to get data from DB, we call session.Find(&amp;[]Author{}) with the slice of table beans, but this have a problem,
+Memory allocation is very high So every time lots of clients try to download excel file, the memory consumption is too high, and downloadling excel file takes too long to complete." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://blog.unknowntpo.me/syncpool/" /><meta property="og:image" content="https://blog.unknowntpo.me/logo.png"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2023-02-13T18:50:03+08:00" />
-<meta property="article:modified_time" content="2023-02-18T19:14:37+08:00" /><meta property="og:site_name" content="Known, Unknown, Unknownable." />
+<meta property="article:modified_time" content="2023-02-19T20:52:57+08:00" /><meta property="og:site_name" content="Known, Unknown, Unknownable." />
 
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://blog.unknowntpo.me/logo.png"/>
 
 <meta name="twitter:title" content="Use `sync.Pool` to reduce memory consumption"/>
-<meta name="twitter:description" content="Identifying the problem Our service is like a excel document datastore. and we use xorm as ORM framework, Everytime we need to get data from DB, we call session.Find(&amp;[]Author{}) with the slice of table beans, but this have some problem,
-Golang&rsquo;s reflect is slow Memory allocation is very high. So every time lots of clients try to download excel file, the memory consumption is too high, and downloadling excel file takes too long to complete."/>
+<meta name="twitter:description" content="Identifying the problem Our service is like a excel document datastore. and we use xorm as ORM framework, Everytime we need to get data from DB, we call session.Find(&amp;[]Author{}) with the slice of table beans, but this have a problem,
+Memory allocation is very high So every time lots of clients try to download excel file, the memory consumption is too high, and downloadling excel file takes too long to complete."/>
 <meta name="application-name" content="Known, Unknown, Unknownable.">
 <meta name="apple-mobile-web-app-title" content="Known, Unknown, Unknownable."><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -32,8 +32,8 @@ Golang&rsquo;s reflect is slow Memory allocation is very high. So every time lot
         "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": "https:\/\/blog.unknowntpo.me\/syncpool\/"
-        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "sync.Pool, performance, Go","wordcount":  619 ,
-        "url": "https:\/\/blog.unknowntpo.me\/syncpool\/","datePublished": "2023-02-13T18:50:03+08:00","dateModified": "2023-02-18T19:14:37+08:00","publisher": {
+        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "sync.Pool, performance, Go","wordcount":  618 ,
+        "url": "https:\/\/blog.unknowntpo.me\/syncpool\/","datePublished": "2023-02-13T18:50:03+08:00","dateModified": "2023-02-19T20:52:57+08:00","publisher": {
             "@type": "Organization",
             "name": "xxxx"},"author": {
                 "@type": "Person",
@@ -106,7 +106,7 @@ Golang&rsquo;s reflect is slow Memory allocation is very high. So every time lot
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">Use `sync.Pool` to reduce memory consumption</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-02-13">2023-02-13</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;619 words&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-02-13">2023-02-13</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;618 words&nbsp;
                 <i class="far fa-clock fa-fw" aria-hidden="true"></i>&nbsp;3 minutes&nbsp;<span id="/syncpool/" class="leancloud_visitors" data-flag-title="Use `sync.Pool` to reduce memory consumption">
                         <i class="far fa-eye fa-fw" aria-hidden="true"></i>&nbsp;<span class=leancloud-visitors-count></span>&nbsp;views
                     </span>&nbsp;</div>
@@ -117,8 +117,16 @@ Golang&rsquo;s reflect is slow Memory allocation is very high. So every time lot
                 </div>
                 <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
   <ul>
-    <li><a href="#identifying-the-problem">Identifying the problem</a></li>
-    <li><a href="#first-attempt">First: attempt:</a></li>
+    <li><a href="#identifying-the-problem">Identifying the problem</a>
+      <ul>
+        <li><a href="#find-the-root-cause-with-pprof">Find the root cause with pprof</a>
+          <ul>
+            <li><a href="#cpu">CPU</a></li>
+            <li><a href="#memory">Memory</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
     <li><a href="#step-2-use-syncpool-to-reduce-memory-allocation">Step 2: Use sync.Pool to reduce memory allocation</a></li>
     <li><a href="#experiment">Experiment:</a></li>
   </ul>
@@ -127,28 +135,35 @@ Golang&rsquo;s reflect is slow Memory allocation is very high. So every time lot
 <p>Our service is like a excel document datastore.
 and we use <code>xorm</code> as ORM framework,
 Everytime we need to get data from DB, we call <code>session.Find(&amp;[]Author{})</code> with the slice of table beans,
-but this have some problem,</p>
-<ol>
-<li>Golang&rsquo;s <code>reflect</code> is slow</li>
-<li>Memory allocation is very high.</li>
-</ol>
+but this have a problem,</p>
+<ul>
+<li>Memory allocation is very high</li>
+</ul>
 <p>So every time lots of clients try to download excel file,
 the memory consumption is too high, and downloadling excel file takes too long to complete.</p>
-<h2 id="first-attempt">First: attempt:</h2>
-<p>We can observe the code, and</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">session</span> <span class="o">*</span><span class="nx">Session</span><span class="p">)</span> <span class="nf">find</span><span class="p">(</span><span class="nx">rowsSlicePtr</span> <span class="kd">interface</span><span class="p">{},</span> <span class="nx">condiBean</span> <span class="o">...</span><span class="kd">interface</span><span class="p">{})</span> <span class="kt">error</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">session</span> <span class="o">*</span><span class="nx">Session</span><span class="p">)</span> <span class="nf">noCacheFind</span><span class="p">(</span><span class="nx">table</span> <span class="o">*</span><span class="nx">schemas</span><span class="p">.</span><span class="nx">Table</span><span class="p">,</span> <span class="nx">containerValue</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Value</span><span class="p">,</span> <span class="nx">sqlStr</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">args</span> <span class="o">...</span><span class="kd">interface</span><span class="p">{})</span> <span class="kt">error</span> <span class="p">{</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h2 id="step-2-use-syncpool-to-reduce-memory-allocation">Step 2: Use sync.Pool to reduce memory allocation</h2>
+<h3 id="find-the-root-cause-with-pprof">Find the root cause with pprof</h3>
+<p>I wrote a benchmark and by leveraging GO&rsquo;s pprof profiling tool, we can easily check out the flamegraph
+using some tool like pyroscope.</p>
+<p>Here&rsquo;s the result we got:</p>
+<h4 id="cpu">CPU</h4>
+<p><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/syncpool/StructureBinding_cpu.png"
+        data-srcset="/syncpool/StructureBinding_cpu.png, /syncpool/StructureBinding_cpu.png 1.5x, /syncpool/StructureBinding_cpu.png 2x"
+        data-sizes="auto"
+        alt="/syncpool/StructureBinding_cpu.png"
+        title="Structure-Binding-cpu" width="1601" height="584" /></p>
+<h4 id="memory">Memory</h4>
+<p><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/syncpool/StructureBinding_mem.png"
+        data-srcset="/syncpool/StructureBinding_mem.png, /syncpool/StructureBinding_mem.png 1.5x, /syncpool/StructureBinding_mem.png 2x"
+        data-sizes="auto"
+        alt="/syncpool/StructureBinding_mem.png"
+        title="Structure-Binding-mem" width="1616" height="648" /></p>
+<h2 id="step-2-use-syncpool-to-reduce-memory-allocation">Step 2: Use sync.Pool to reduce memory allocation</h2>
 <p>The solution I came out is very simple, if memory allocation is time-consuming,
 why don&rsquo;t we reuse the data structure in memory ? In this case,
 we&rsquo;re using <code>[][]string</code></p>
@@ -290,8 +305,8 @@ and compare to the one without <code>sync.Pool</code>, and because memory alloca
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
-                <span>Updated on 2023-02-18&nbsp;<a class="git-hash" href="https://github.com/unknowntpo/commit/bfaa140c5a217359ede768a4263567b1586add20" target="_blank" title="commit by unknowntpo(e850506@gmail.com) bfaa140c5a217359ede768a4263567b1586add20: Tweak sync.Pool article">
-                                    <i class="fas fa-hashtag fa-fw" aria-hidden="true"></i>bfaa140</a></span>
+                <span>Updated on 2023-02-19&nbsp;<a class="git-hash" href="https://github.com/unknowntpo/commit/9d20dee627aeb5cde6913a8673d918ecafa8b4e2" target="_blank" title="commit by unknowntpo(e850506@gmail.com) 9d20dee627aeb5cde6913a8673d918ecafa8b4e2: tweak sync.Pool, add some demo code about pool">
+                                    <i class="fas fa-hashtag fa-fw" aria-hidden="true"></i>9d20dee</a></span>
             </div></div>
         <div class="post-info-line">
             <div class="post-info-md"><span>
