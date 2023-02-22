@@ -27,11 +27,12 @@ Here's the result we got:
 #### Memory Allocation
 ![Structure-Binding-mem](StructureBinding_mem.png)
 
-We can see that `(*Session).rowsToBeans` takes a lot of time and consumes a lot of
-memory.
+We can see that under the frame of `(*Session).rows2Beans`,
+except the function underneath `xorm` framework that we can't touch,
+`(*Session).slice2Bean` took a lot of CPU time and had lot of
+memory allocation.
 
-Let's see what happend inside.
-
+<TODO>: explain structure binding
 
 ## Step 2: Use sync.Pool to reduce memory allocation
 
