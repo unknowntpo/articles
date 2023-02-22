@@ -28,7 +28,7 @@ Here's the result we got:
 
 ![Structure-Binding-cpu](StructureBinding_cpu.png)
 
-#### Memory
+#### Memory Allocation
 ![Structure-Binding-mem](StructureBinding_mem.png)
 
 We can see that `(*Session).rowsToBeans` takes a lot of time and consumes a lot of
