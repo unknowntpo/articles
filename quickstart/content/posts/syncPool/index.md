@@ -31,6 +31,10 @@ Here's the result we got:
 #### Memory
 ![Structure-Binding-mem](StructureBinding_mem.png)
 
+We can see that `(*Session).rowsToBeans` takes a lot of time and consumes a lot of
+memory.
+
+Let's see what happend inside.
 
 
 ## Step 2: Use sync.Pool to reduce memory allocation
