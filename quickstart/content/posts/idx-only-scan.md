@@ -94,16 +94,75 @@ where rank =1
 and finalDBData.key_id = dbKey.id;
 ```
 
-### useless index and Sequential scan
+### Useless index and time-consuming Sequential scan
 
-This query is slow it has to scan the whole `dbData` table,
-partition it by `key_id`, and rank the timestamp,
-planner tends to range over every row in data table to get `rank=1` data,
-and then join it with key table, finally returns it back to client.
-So this query it's so slow,
-we current have about `30000` keys in key table, each project has about `2000` keys, and almost `100` milion
+This query is slow because it has to:
+
+1. Scan the whole `dbData` table
+2. partition it by `key_id`, and rank the timestamp.
+3. Join it with `dbKey` table with `rank=1` and `finalDBData.key_id = dbKey.id`
+
+Planner tends to range over every row in data table to get `rank=1` data
+because the `rank=1` `key_id - timestamp` can be anywhere in the whole table. 
+
+This query it's so slow, we current have about `30000` keys in key table,
+each project has about `2000` keys, and almost `100` milion
 data rows in data table,
 it usually takes at least `60` second to get the particular version of data. 
+
+Here's the plan of this query:
+
+```
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Join  (cost=1125351.65..1289874.58 rows=5621 width=57) (actual time=9082.308..9468.256 rows=11020 loops=1)
+   Output: dbkey.id, dbkey.name, finaldbdata.id, finaldbdata.key_id, finaldbdata."timestamp", finaldbdata.rank
+   Hash Cond: (finaldbdata.key_id = dbkey.id)
+   Buffers: shared hit=358 read=545756, temp read=3000 written=3018
+   ->  Subquery Scan on finaldbdata  (cost=1125043.98..1289482.62 rows=5614 width=20) (actual time=9077.986..9459.255 rows=11000 loops=1)
+         Output: finaldbdata.id, finaldbdata.key_id, finaldbdata."timestamp", finaldbdata.rank
+         Filter: (finaldbdata.rank = 1)
+         Rows Removed by Filter: 1100200
+         Buffers: shared hit=274 read=545756, temp read=3000 written=3018
+         ->  WindowAgg  (cost=1125043.98..1275448.81 rows=1122705 width=20) (actual time=9077.985..9432.015 rows=1111200 loops=1)
+               Output: dbdata.id, dbdata.key_id, dbdata."timestamp", rank() OVER (?)
+               Buffers: shared hit=274 read=545756, temp read=3000 written=3018
+               ->  Gather Merge  (cost=1125043.98..1255801.47 rows=1122705 width=12) (actual time=9077.972..9174.199 rows=1111200 loops=1)
+                     Output: dbdata.key_id, dbdata."timestamp", dbdata.id
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=274 read=545756, temp read=3000 written=3018
+                     ->  Sort  (cost=1124043.95..1125213.44 rows=467794 width=12) (actual time=9060.365..9078.656 rows=370400 loops=3)
+                           Output: dbdata.key_id, dbdata."timestamp", dbdata.id
+                           Sort Key: dbdata.key_id, dbdata."timestamp" DESC
+                           Sort Method: external merge  Disk: 8304kB
+                           Buffers: shared hit=274 read=545756, temp read=3000 written=3018
+                           Worker 0:  actual time=9048.365..9066.503 rows=354371 loops=1
+                             Sort Method: external merge  Disk: 7656kB
+                             Buffers: shared hit=105 read=175482, temp read=957 written=963
+                           Worker 1:  actual time=9060.662..9079.499 rows=372284 loops=1
+                             Sort Method: external merge  Disk: 8040kB
+                             Buffers: shared hit=105 read=180922, temp read=1005 written=1011
+                           ->  Parallel Seq Scan on public.dbdata  (cost=0.00..1071990.75 rows=467794 width=12) (actual time=5.360..8698.716 rows=370400 loops=3)
+                                 Output: dbdata.key_id, dbdata."timestamp", dbdata.id
+                                 Filter: (dbdata."timestamp" <= 101)
+                                 Rows Removed by Filter: 33296333
+                                 Buffers: shared hit=192 read=545756
+                                 Worker 0:  actual time=4.511..8532.085 rows=354371 loops=1
+                                   Buffers: shared hit=64 read=175482
+                                 Worker 1:  actual time=3.410..8640.241 rows=372284 loops=1
+                                   Buffers: shared hit=64 read=180922
+   ->  Hash  (cost=183.41..183.41 rows=9941 width=37) (actual time=4.312..4.313 rows=10010 loops=1)
+         Output: dbkey.id, dbkey.name
+         Buckets: 16384  Batches: 1  Memory Usage: 803kB
+         Buffers: shared hit=84
+         ->  Seq Scan on public.dbkey  (cost=0.00..183.41 rows=9941 width=37) (actual time=0.007..1.395 rows=10010 loops=1)
+```
+
+And you can also view it on [explain.dalibo.com](https://explain.dalibo.com/plan/605d87d87h149730
+)
+
+
+
 
 ## Approach 1: Materialized View
 

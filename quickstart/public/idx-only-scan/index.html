@@ -34,7 +34,7 @@ Original Query and the use case Our App is a simple excel data version control s
         "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": "https:\/\/blog.unknowntpo.me\/idx-only-scan\/"
-        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "performance, PostgreSQL","wordcount":  1001 ,
+        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "performance, PostgreSQL","wordcount":  1335 ,
         "url": "https:\/\/blog.unknowntpo.me\/idx-only-scan\/","datePublished": "2023-02-12T14:23:03+08:00","dateModified": "2023-02-16T06:21:09+08:00","publisher": {
             "@type": "Organization",
             "name": "xxxx"},"author": {
@@ -108,8 +108,8 @@ Original Query and the use case Our App is a simple excel data version control s
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">Optimize a PARTITION - SELECT query up to 60x faster</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-02-12">2023-02-12</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;1001 words&nbsp;
-                <i class="far fa-clock fa-fw" aria-hidden="true"></i>&nbsp;5 minutes&nbsp;<span id="/idx-only-scan/" class="leancloud_visitors" data-flag-title="Optimize a PARTITION - SELECT query up to 60x faster">
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-02-12">2023-02-12</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;1335 words&nbsp;
+                <i class="far fa-clock fa-fw" aria-hidden="true"></i>&nbsp;7 minutes&nbsp;<span id="/idx-only-scan/" class="leancloud_visitors" data-flag-title="Optimize a PARTITION - SELECT query up to 60x faster">
                         <i class="far fa-eye fa-fw" aria-hidden="true"></i>&nbsp;<span class=leancloud-visitors-count></span>&nbsp;views
                     </span>&nbsp;</div>
         </div><div class="details toc" id="toc-static"  data-kept="">
@@ -122,7 +122,7 @@ Original Query and the use case Our App is a simple excel data version control s
     <li><a href="#original-query-and-the-use-case">Original Query and the use case</a></li>
     <li><a href="#identifying-the-root-cause">Identifying the root cause</a>
       <ul>
-        <li><a href="#useless-index-and-sequential-scan">useless index and Sequential scan</a></li>
+        <li><a href="#useless-index-and-time-consuming-sequential-scan">Useless index and time-consuming Sequential scan</a></li>
       </ul>
     </li>
     <li><a href="#approach-1-materialized-view">Approach 1: Materialized View</a></li>
@@ -271,15 +271,113 @@ Of course, this design has some limitations, but in this post, let&rsquo;s focus
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">and</span><span class="w"> </span><span class="n">finalDBData</span><span class="p">.</span><span class="n">key_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dbKey</span><span class="p">.</span><span class="n">id</span><span class="p">;</span><span class="w">
 </span></span></span></code></pre></td></tr></table>
 </div>
-</div><h3 id="useless-index-and-sequential-scan">useless index and Sequential scan</h3>
-<p>This query is slow it has to scan the whole <code>dbData</code> table,
-partition it by <code>key_id</code>, and rank the timestamp,
-planner tends to range over every row in data table to get <code>rank=1</code> data,
-and then join it with key table, finally returns it back to client.
-So this query it&rsquo;s so slow,
-we current have about <code>30000</code> keys in key table, each project has about <code>2000</code> keys, and almost <code>100</code> milion
+</div><h3 id="useless-index-and-time-consuming-sequential-scan">Useless index and time-consuming Sequential scan</h3>
+<p>This query is slow because it has to:</p>
+<ol>
+<li>Scan the whole <code>dbData</code> table</li>
+<li>partition it by <code>key_id</code>, and rank the timestamp.</li>
+<li>Join it with <code>dbKey</code> table with <code>rank=1</code> and <code>finalDBData.key_id = dbKey.id</code></li>
+</ol>
+<p>Planner tends to range over every row in data table to get <code>rank=1</code> data
+because the <code>rank=1</code> <code>key_id - timestamp</code> can be anywhere in the whole table.</p>
+<p>This query it&rsquo;s so slow, we current have about <code>30000</code> keys in key table,
+each project has about <code>2000</code> keys, and almost <code>100</code> milion
 data rows in data table,
 it usually takes at least <code>60</code> second to get the particular version of data.</p>
+<p>Here&rsquo;s the plan of this query:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">------------------------------------------------------------------------------------------------------------------------------------------------------------------
+</span></span><span class="line"><span class="cl"> Hash Join  (cost=1125351.65..1289874.58 rows=5621 width=57) (actual time=9082.308..9468.256 rows=11020 loops=1)
+</span></span><span class="line"><span class="cl">   Output: dbkey.id, dbkey.name, finaldbdata.id, finaldbdata.key_id, finaldbdata.&#34;timestamp&#34;, finaldbdata.rank
+</span></span><span class="line"><span class="cl">   Hash Cond: (finaldbdata.key_id = dbkey.id)
+</span></span><span class="line"><span class="cl">   Buffers: shared hit=358 read=545756, temp read=3000 written=3018
+</span></span><span class="line"><span class="cl">   -&gt;  Subquery Scan on finaldbdata  (cost=1125043.98..1289482.62 rows=5614 width=20) (actual time=9077.986..9459.255 rows=11000 loops=1)
+</span></span><span class="line"><span class="cl">         Output: finaldbdata.id, finaldbdata.key_id, finaldbdata.&#34;timestamp&#34;, finaldbdata.rank
+</span></span><span class="line"><span class="cl">         Filter: (finaldbdata.rank = 1)
+</span></span><span class="line"><span class="cl">         Rows Removed by Filter: 1100200
+</span></span><span class="line"><span class="cl">         Buffers: shared hit=274 read=545756, temp read=3000 written=3018
+</span></span><span class="line"><span class="cl">         -&gt;  WindowAgg  (cost=1125043.98..1275448.81 rows=1122705 width=20) (actual time=9077.985..9432.015 rows=1111200 loops=1)
+</span></span><span class="line"><span class="cl">               Output: dbdata.id, dbdata.key_id, dbdata.&#34;timestamp&#34;, rank() OVER (?)
+</span></span><span class="line"><span class="cl">               Buffers: shared hit=274 read=545756, temp read=3000 written=3018
+</span></span><span class="line"><span class="cl">               -&gt;  Gather Merge  (cost=1125043.98..1255801.47 rows=1122705 width=12) (actual time=9077.972..9174.199 rows=1111200 loops=1)
+</span></span><span class="line"><span class="cl">                     Output: dbdata.key_id, dbdata.&#34;timestamp&#34;, dbdata.id
+</span></span><span class="line"><span class="cl">                     Workers Planned: 2
+</span></span><span class="line"><span class="cl">                     Workers Launched: 2
+</span></span><span class="line"><span class="cl">                     Buffers: shared hit=274 read=545756, temp read=3000 written=3018
+</span></span><span class="line"><span class="cl">                     -&gt;  Sort  (cost=1124043.95..1125213.44 rows=467794 width=12) (actual time=9060.365..9078.656 rows=370400 loops=3)
+</span></span><span class="line"><span class="cl">                           Output: dbdata.key_id, dbdata.&#34;timestamp&#34;, dbdata.id
+</span></span><span class="line"><span class="cl">                           Sort Key: dbdata.key_id, dbdata.&#34;timestamp&#34; DESC
+</span></span><span class="line"><span class="cl">                           Sort Method: external merge  Disk: 8304kB
+</span></span><span class="line"><span class="cl">                           Buffers: shared hit=274 read=545756, temp read=3000 written=3018
+</span></span><span class="line"><span class="cl">                           Worker 0:  actual time=9048.365..9066.503 rows=354371 loops=1
+</span></span><span class="line"><span class="cl">                             Sort Method: external merge  Disk: 7656kB
+</span></span><span class="line"><span class="cl">                             Buffers: shared hit=105 read=175482, temp read=957 written=963
+</span></span><span class="line"><span class="cl">                           Worker 1:  actual time=9060.662..9079.499 rows=372284 loops=1
+</span></span><span class="line"><span class="cl">                             Sort Method: external merge  Disk: 8040kB
+</span></span><span class="line"><span class="cl">                             Buffers: shared hit=105 read=180922, temp read=1005 written=1011
+</span></span><span class="line"><span class="cl">                           -&gt;  Parallel Seq Scan on public.dbdata  (cost=0.00..1071990.75 rows=467794 width=12) (actual time=5.360..8698.716 rows=370400 loops=3)
+</span></span><span class="line"><span class="cl">                                 Output: dbdata.key_id, dbdata.&#34;timestamp&#34;, dbdata.id
+</span></span><span class="line"><span class="cl">                                 Filter: (dbdata.&#34;timestamp&#34; &lt;= 101)
+</span></span><span class="line"><span class="cl">                                 Rows Removed by Filter: 33296333
+</span></span><span class="line"><span class="cl">                                 Buffers: shared hit=192 read=545756
+</span></span><span class="line"><span class="cl">                                 Worker 0:  actual time=4.511..8532.085 rows=354371 loops=1
+</span></span><span class="line"><span class="cl">                                   Buffers: shared hit=64 read=175482
+</span></span><span class="line"><span class="cl">                                 Worker 1:  actual time=3.410..8640.241 rows=372284 loops=1
+</span></span><span class="line"><span class="cl">                                   Buffers: shared hit=64 read=180922
+</span></span><span class="line"><span class="cl">   -&gt;  Hash  (cost=183.41..183.41 rows=9941 width=37) (actual time=4.312..4.313 rows=10010 loops=1)
+</span></span><span class="line"><span class="cl">         Output: dbkey.id, dbkey.name
+</span></span><span class="line"><span class="cl">         Buckets: 16384  Batches: 1  Memory Usage: 803kB
+</span></span><span class="line"><span class="cl">         Buffers: shared hit=84
+</span></span><span class="line"><span class="cl">         -&gt;  Seq Scan on public.dbkey  (cost=0.00..183.41 rows=9941 width=37) (actual time=0.007..1.395 rows=10010 loops=1)
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>And you can also view it on <a href="https://explain.dalibo.com/plan/605d87d87h149730" target="_blank" rel="noopener noreffer ">explain.dalibo.com</a></p>
 <h2 id="approach-1-materialized-view">Approach 1: Materialized View</h2>
 <p>We can use materialized view to cache the result set of particalar version of data,
 but the first one who needs to get data still suffers from the slow query.</p>
