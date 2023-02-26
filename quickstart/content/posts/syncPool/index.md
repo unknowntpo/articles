@@ -38,7 +38,13 @@ memory allocation.
 
 <TODO>: explain structure binding
 
+## Step 1: Use `[][]string` to hold the data
+Based on the assumption, we can use `[][]string` to reduce the cost of structure binding, you can see the benchmark below `unifyContainerNoPool` 
+.
+
 ## Step 2: Use sync.Pool to reduce memory allocation
+
+But it still need huge amount of memory allocation for every `[]string` and every `[][]string`, let's see how we can reduce this cost.
 
 The solution I came out is very simple, if memory allocation is time-consuming,
 why don't we reuse the data structure in memory ? In this case,
