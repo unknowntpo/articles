@@ -93,6 +93,10 @@
     </div><main class="main">
                 <div class="container"><div class="page home" data-home="posts"><div class="home-profile"><div class="home-subtitle"><div id="id-1" class="typeit"></div></div><div class="links"><a href="https://github.com/unknowntpo" title="GitHub" target="_blank" rel="noopener noreffer me"><i class="fab fa-github fa-fw" aria-hidden="true"></i></a></div></div>
 <article class="single summary" itemscope itemtype="http://schema.org/Article"><h1 class="single-title" itemprop="name headline">
+        <a href="/pg-dead-lock/">Pg Dead Lock</a>
+    </h1><div class="post-meta"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span>&nbsp;<span class="post-publish">published on <time datetime="2023-03-04">2023-03-04</time></span></div><div class="content">Detecting PostgreSQL DeadLock and how we solve it with ensuring locking order Pin-Point the problem Solution: Using Explicit locking with SELECT ... FOR UPDATE Ensuring Locking order using ORDER BY </div><div class="post-footer">
+        <a href="/pg-dead-lock/">Read More</a></div>
+</article><article class="single summary" itemscope itemtype="http://schema.org/Article"><h1 class="single-title" itemprop="name headline">
         <a href="/syncpool/">Use `sync.Pool` to reduce memory consumption</a>
     </h1><div class="post-meta"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span>&nbsp;<span class="post-publish">published on <time datetime="2023-02-13">2023-02-13</time></span></div><div class="content">Identifying the problem Our service is like a excel document datastore. and we use xorm as ORM framework, Everytime we need to get data from DB, we call session.Find(&amp;[]Author{}) with the slice of table beans, but this have a problem,
 Memory allocation is very high So every time lots of clients try to download excel file, the memory consumption is too high, and downloadling excel file takes too long to complete.</div><div class="post-footer">
