@@ -4,7 +4,15 @@
         <link>https://blog.unknowntpo.me/posts/</link>
         <description>All Posts | Known, Unknown, Unknownable</description>
         <generator>Hugo -- gohugo.io</generator><language>en</language><managingEditor>e850506@gmail.com (unknowntpo)</managingEditor>
-            <webMaster>e850506@gmail.com (unknowntpo)</webMaster><lastBuildDate>Sat, 04 Mar 2023 19:01:23 &#43;0800</lastBuildDate><atom:link href="https://blog.unknowntpo.me/posts/" rel="self" type="application/rss+xml" /><item>
+            <webMaster>e850506@gmail.com (unknowntpo)</webMaster><lastBuildDate>Sun, 05 Mar 2023 11:00:44 &#43;0800</lastBuildDate><atom:link href="https://blog.unknowntpo.me/posts/" rel="self" type="application/rss+xml" /><item>
+    <title>Understand false sharing with a simple example</title>
+    <link>https://blog.unknowntpo.me/false-sharing/</link>
+    <pubDate>Sun, 05 Mar 2023 11:00:44 &#43;0800</pubDate>
+    <author>unknowntpo</author>
+    <guid>https://blog.unknowntpo.me/false-sharing/</guid>
+    <description><![CDATA[False Sharing The Problem of false sharing = Example: slice of counters Measure the performance with go bench Detect cache miss with linux perf Example Usage of padding in standard library: sync.Pool 1 2 3 4 5 6 7 type poolLocal struct { poolLocalInternal // Prevents false sharing on widespread platforms with // 128 mod (cache line size) = 0 . pad [128 - unsafe.Sizeof(poolLocalInternal{})%128]byte } ]]></description>
+</item>
+<item>
     <title>Pg Dead Lock</title>
     <link>https://blog.unknowntpo.me/pg-dead-lock/</link>
     <pubDate>Sat, 04 Mar 2023 19:01:23 &#43;0800</pubDate>
