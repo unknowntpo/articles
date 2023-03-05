@@ -1,7 +1,7 @@
 # Use `sync.Pool` to reduce memory consumption
 
 
-## Identifying the problem
+# Identifying the problem
 
 Our service is like a excel document datastore.
 and we use `xorm` as ORM framework,
@@ -13,18 +13,18 @@ but this have a problem,
 So every time lots of clients try to download excel file,
 the memory consumption is too high, and downloadling excel file takes too long to complete.
 
-### Find the root cause with pprof
+## Find the root cause with pprof
 
 I wrote a benchmark and by leveraging GO's pprof profiling tool, we can easily check out the flamegraph
 using some tool like pyroscope.
 
 Here's the result we got:
 
-#### CPU
+### CPU
 
 ![Structure-Binding-cpu](StructureBinding_cpu.png)
 
-#### Memory Allocation
+### Memory Allocation
 ![Structure-Binding-mem](StructureBinding_mem.png)
 
 We can see that under the frame of `(*Session).rows2Beans`,
@@ -32,7 +32,15 @@ except the function underneath `xorm` framework that we can't touch,
 `(*Session).slice2Bean` took a lot of CPU time and had lot of
 memory allocation.
 
-<TODO>: explain structure binding
+#### Structure Binding
+In [src of structure-binding](https://gitea.com/xorm/xorm/src/commit/bd58520020dfb5bd6b7f5779e871d53aa9ee4c71/session_find.go#L235-L247)
+
+
+#### With `[][]string`
+
+
+If the cache
+
 
 ## Step 1: Use `[][]string` to hold the data
 Based on the assumption, we can use `[][]string` to reduce the cost of structure binding, you can see the benchmark below `unifyContainerNoPool` 
@@ -128,3 +136,7 @@ Here's the plot:
 ![perf](./perf.png)
 
 I put my code at the [repo](https://github.com/unknowntpo/playground-2022/tree/master/go/xorm/unifyContainer), please go check it out!
+
+## Reference
+### Source code: Structure-Binding {#my-anchor} 
+
