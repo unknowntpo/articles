@@ -1,8 +1,5 @@
----
-title: "Build Nested JSON in PostgreSQL"
-date: 2023-03-07T10:03:56+08:00
-draft: false
----
+# Build Nested JSON in PostgreSQL
+
 
 # Build nested JSON in PostgreSQL
 
