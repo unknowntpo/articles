@@ -1,8 +1,6 @@
 # Build Nested JSON in PostgreSQL
 
 
-# Build nested JSON in PostgreSQL
-
 Original Stackoverflow thread: 
 
 https://stackoverflow.com/questions/42222968/create-nested-json-from-sql-query-postgres-9-4/42226253#42226253

@@ -12,7 +12,7 @@
     <pubDate>Tue, 07 Mar 2023 10:03:56 &#43;0800</pubDate>
     <author>unknowntpo</author>
     <guid>https://blog.unknowntpo.me/nested-json/</guid>
-    <description><![CDATA[Build nested JSON in PostgreSQL Original Stackoverflow thread:
+    <description><![CDATA[Original Stackoverflow thread:
 https://stackoverflow.com/questions/42222968/create-nested-json-from-sql-query-postgres-9-4/42226253#42226253
 Suppose we have this tables:
 person car wheel And the relation between is:

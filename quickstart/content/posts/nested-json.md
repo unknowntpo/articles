@@ -2,9 +2,8 @@
 title: "Build Nested JSON in PostgreSQL"
 date: 2023-03-07T10:03:56+08:00
 draft: false
+tags: ['performance', 'PostgreSQL', 'JSON']
 ---
-
-# Build nested JSON in PostgreSQL
 
 Original Stackoverflow thread: 
 
