@@ -1,7 +1,7 @@
 ---
 title: "Understand false sharing with a simple example"
 date: 2023-03-05T11:00:44+08:00
-draft: false
+draft: true
 tags: ['performance', 'Concurrency', 'Go']
 ---
 
