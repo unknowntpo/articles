@@ -32,7 +32,7 @@ Memory allocation is very high So every time lots of clients try to download exc
         "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": "https:\/\/blog.unknowntpo.me\/syncpool\/"
-        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "sync.Pool, performance, Go","wordcount":  720 ,
+        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "sync.Pool, performance, Go","wordcount":  816 ,
         "url": "https:\/\/blog.unknowntpo.me\/syncpool\/","datePublished": "2023-02-13T18:50:03+08:00","dateModified": "2023-03-05T14:16:46+08:00","publisher": {
             "@type": "Organization",
             "name": "xxxx"},"author": {
@@ -106,7 +106,7 @@ Memory allocation is very high So every time lots of clients try to download exc
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">Use `sync.Pool` to reduce memory consumption</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-02-13">2023-02-13</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;720 words&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-02-13">2023-02-13</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;816 words&nbsp;
                 <i class="far fa-clock fa-fw" aria-hidden="true"></i>&nbsp;4 minutes&nbsp;<span id="/syncpool/" class="leancloud_visitors" data-flag-title="Use `sync.Pool` to reduce memory consumption">
                         <i class="far fa-eye fa-fw" aria-hidden="true"></i>&nbsp;<span class=leancloud-visitors-count></span>&nbsp;views
                     </span>&nbsp;</div>
@@ -120,10 +120,9 @@ Memory allocation is very high So every time lots of clients try to download exc
     <li><a href="#find-the-root-cause-with-pprof">Find the root cause with pprof</a>
       <ul>
         <li><a href="#cpu">CPU</a></li>
-        <li><a href="#memory-allocation">Memory Allocation</a>
+        <li><a href="#memory-allocation">Memory <strong>Allocation</strong></a>
           <ul>
-            <li><a href="#structure-binding">Structure Binding</a></li>
-            <li><a href="#with-string">With <code>[][]string</code></a></li>
+            <li><a href="#the-problem-of-structure-binding">The problem of Structure Binding</a></li>
           </ul>
         </li>
       </ul>
@@ -131,11 +130,6 @@ Memory allocation is very high So every time lots of clients try to download exc
     <li><a href="#step-1-use-string-to-hold-the-data">Step 1: Use <code>[][]string</code> to hold the data</a></li>
     <li><a href="#step-2-use-syncpool-to-reduce-memory-allocation">Step 2: Use sync.Pool to reduce memory allocation</a></li>
     <li><a href="#experiment">Experiment:</a></li>
-    <li><a href="#reference">Reference</a>
-      <ul>
-        <li><a href="#my-anchor">Source code: Structure-Binding</a></li>
-      </ul>
-    </li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><h1 id="identifying-the-problem">Identifying the problem</h1>
@@ -161,7 +155,7 @@ using some tool like pyroscope.</p>
         data-sizes="auto"
         alt="/syncpool/StructureBinding_cpu.png"
         title="Structure-Binding-cpu" width="1601" height="584" /></p>
-<h3 id="memory-allocation">Memory Allocation</h3>
+<h3 id="memory-allocation">Memory <strong>Allocation</strong></h3>
 <p><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -174,10 +168,16 @@ using some tool like pyroscope.</p>
 except the function underneath <code>xorm</code> framework that we can&rsquo;t touch,
 <code>(*Session).slice2Bean</code> took a lot of CPU time and had lot of
 memory allocation.</p>
-<h4 id="structure-binding">Structure Binding</h4>
-<p>In <a href="https://gitea.com/xorm/xorm/src/commit/bd58520020dfb5bd6b7f5779e871d53aa9ee4c71/session_find.go#L235-L247" target="_blank" rel="noopener noreffer ">src of structure-binding</a></p>
-<h4 id="with-string">With <code>[][]string</code></h4>
-<p>If the cache</p>
+<h4 id="the-problem-of-structure-binding">The problem of Structure Binding</h4>
+<p>After took a look at the code in <a href="https://gitea.com/xorm/xorm/src/commit/bd58520020dfb5bd6b7f5779e871d53aa9ee4c71/session_find.go#L235-L247" target="_blank" rel="noopener noreffer "><code>noCacheFind</code></a>, I found that if we use bean (a structure with information about db schema definition) to hold the result set, <code>xorm</code> will call <code>session.rows2Beans</code> to convert rows into <code>tableBean</code>.</p>
+<p>In <code>sesson.rows2Beans()</code>, it will:</p>
+<ul>
+<li>convert rows to slices (<code>[]any</code>) by calling <code>session.row2Slice()</code></li>
+<li>convert <code>[]any</code> to <code>[]bean</code> by calling <code>session.slice2Bean()</code></li>
+</ul>
+<p>And this tooks a lot of time.</p>
+<p>But I also found that if we use <code>[][]string</code> to hold the result set,
+after getting <code>xorm.Rows</code> (underlying data structure is <code>database/sql.Rows</code>), <code>noCacheFind()</code> will call <code>rows.Scan</code> for each row, so simple ! This is the chance we can make <code>session.Find()</code> much faster.</p>
 <h2 id="step-1-use-string-to-hold-the-data">Step 1: Use <code>[][]string</code> to hold the data</h2>
 <p>Based on the assumption, we can use <code>[][]string</code> to reduce the cost of structure binding, you can see the benchmark below <code>unifyContainerNoPool</code>
 .</p>
@@ -320,8 +320,6 @@ and compare to the one without <code>sync.Pool</code>, and because memory alloca
         alt="./perf.png"
         title="perf" /></p>
 <p>I put my code at the <a href="https://github.com/unknowntpo/playground-2022/tree/master/go/xorm/unifyContainer" target="_blank" rel="noopener noreffer ">repo</a>, please go check it out!</p>
-<h2 id="reference">Reference</h2>
-<h3 id="my-anchor">Source code: Structure-Binding</h3>
 </div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">

@@ -24,7 +24,7 @@ Here's the result we got:
 
 ![Structure-Binding-cpu](StructureBinding_cpu.png)
 
-### Memory Allocation
+### Memory **Allocation**
 ![Structure-Binding-mem](StructureBinding_mem.png)
 
 We can see that under the frame of `(*Session).rows2Beans`,
@@ -32,14 +32,17 @@ except the function underneath `xorm` framework that we can't touch,
 `(*Session).slice2Bean` took a lot of CPU time and had lot of
 memory allocation.
 
-#### Structure Binding
-In [src of structure-binding](https://gitea.com/xorm/xorm/src/commit/bd58520020dfb5bd6b7f5779e871d53aa9ee4c71/session_find.go#L235-L247)
+#### The problem of Structure Binding
+After took a look at the code in [`noCacheFind`](https://gitea.com/xorm/xorm/src/commit/bd58520020dfb5bd6b7f5779e871d53aa9ee4c71/session_find.go#L235-L247), I found that if we use bean (a structure with information about db schema definition) to hold the result set, `xorm` will call `session.rows2Beans` to convert rows into `tableBean`.
 
+In `sesson.rows2Beans()`, it will:
+- convert rows to slices (`[]any`) by calling `session.row2Slice()`
+- convert `[]any` to `[]bean` by calling `session.slice2Bean()`
 
-#### With `[][]string`
+And this tooks a lot of time.
 
-
-If the cache
+But I also found that if we use `[][]string` to hold the result set,
+after getting `xorm.Rows` (underlying data structure is `database/sql.Rows`), `noCacheFind()` will call `rows.Scan` for each row, so simple ! This is the chance we can make `session.Find()` much faster.
 
 
 ## Step 1: Use `[][]string` to hold the data
@@ -136,7 +139,3 @@ Here's the plot:
 ![perf](./perf.png)
 
 I put my code at the [repo](https://github.com/unknowntpo/playground-2022/tree/master/go/xorm/unifyContainer), please go check it out!
-
-## Reference
-### Source code: Structure-Binding {#my-anchor} 
-
