@@ -1,0 +1,16 @@
+// github.html
+{{- $url := .Get "url" -}}
+{{- $lines := .Get "lines" -}}
+{{- if $url -}}
+<a href="{{ $url }}" target="_blank" rel="noopener">{{ $url }}</a>
+{{- else -}}
+{{ errorf "GitHub URL is missing in %s shortcode" .Name }}
+{{- end -}}
+{{- if $lines -}}
+<br>
+<a href="{{ $url }}#L{{ (index $lines 0) }}" target="_blank" rel="noopener">{{ printf "%d" (index $lines 0) }}</a>
+{{- if gt (len $lines) 1 -}}
+-
+<a href="{{ $url }}#L{{ (index $lines 1) }}" target="_blank" rel="noopener">{{ printf "%d" (index $lines 1) }}</a>
+{{- end -}}
+{{- end -}}
