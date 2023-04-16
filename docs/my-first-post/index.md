@@ -17,3 +17,6 @@ Block Formula:
 {{< raw >}}
 \[ a=b+c \\ d+e=f \]
 {{< /raw >}}
+
+# Test IFrame
+{{< myiframe "https://elixir.bootlin.com/linux/latest/source/kernel/sys.c#L67" >}}

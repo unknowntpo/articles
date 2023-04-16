@@ -52,7 +52,8 @@ The result she generated is totally correct, and can be run in playground.
     <pubDate>Sun, 08 Jan 2023 19:38:19 &#43;0800</pubDate>
     <author>unknowntpo</author>
     <guid>https://blog.unknowntpo.me/my-first-post/</guid>
-    <description><![CDATA[Hello, This is my first time trying Hugo! Inline Formula: 1 SELECT &#39;hello-world&#39; FROM me Block Formula:]]></description>
+    <description><![CDATA[Hello, This is my first time trying Hugo! Inline Formula: 1 SELECT &#39;hello-world&#39; FROM me Block Formula:
+Test IFrame ]]></description>
 </item>
 <item>
     <title>About me</title>
