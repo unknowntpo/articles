@@ -186,7 +186,7 @@ We can build the mapping between key_id and the `rank=1` timestamp first,
 ```sql
 WITH map AS (
   SELECT 
-    key_id,
+    DISTINCT(key_id),
     timestamp
   FROM (
     SELECT
@@ -195,6 +195,7 @@ WITH map AS (
      rank() OVER (PARTITION BY key_id ORDER BY TIMESTAMP DESC) AS rank
     FROM
     dbData
+    -- filtering stuff depends on business logic
     where "timestamp" <= 10000 and key_id < 100
 ) sub WHERE rank = 1)
 SELECT * FROM map; 
@@ -216,7 +217,7 @@ and then, get actual data from `dbData` with specific `key_id` and `timestamp` p
 ```sql
 WITH map AS (
   SELECT 
-    key_id,
+    DISTINCT(key_id),
     timestamp
   FROM (
     SELECT
@@ -225,6 +226,7 @@ WITH map AS (
      rank() OVER (PARTITION BY key_id ORDER BY TIMESTAMP DESC) AS rank
     FROM
     dbData
+    -- filtering stuff depends on business logic
     where "timestamp" <= 10000 and key_id < 100
 ) sub WHERE rank = 1) 
 SELECT
@@ -239,7 +241,16 @@ The reason we build the `map` first is that the select list in `map` are all sto
 which satisfied requirement `2` in the documentation,
 and later when we query `dbData` , we can still have Index Scan.
 
-Here's the example [ query plan ](https://explain.dalibo.com/plan/86114340afae7349)
+Here's the example
+- [db<>fiddle](https://dbfiddle.uk/xbKuDXER)
+- [query plan ](https://explain.dalibo.com/plan/86114340afae7349)
+
+>**UPDATE**:
+>The `key_id` in `map` should be unique, or there will be duplicated keys with same timestamp, so I added `DISTINCT(key_id)` to the `map` query.
+
+
+
+
 
 ## Final choice: I want them all! 
 
@@ -248,3 +259,4 @@ and maintain a materialized view (we call it `mat_view` for short) management sy
 
 Reference:
 - [PostgreSQL Wiki]( https://wiki.postgresql.org/wiki/Index-only_scans )
+

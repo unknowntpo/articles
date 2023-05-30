@@ -34,7 +34,7 @@ Original Query and the use case Our App is a simple excel data version control s
         "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": "https:\/\/blog.unknowntpo.me\/idx-only-scan\/"
-        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "performance, PostgreSQL","wordcount":  1335 ,
+        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "performance, PostgreSQL","wordcount":  1377 ,
         "url": "https:\/\/blog.unknowntpo.me\/idx-only-scan\/","datePublished": "2023-02-12T14:23:03+08:00","dateModified": "2023-02-25T15:58:53+08:00","publisher": {
             "@type": "Organization",
             "name": "xxxx"},"author": {
@@ -108,7 +108,7 @@ Original Query and the use case Our App is a simple excel data version control s
     <div class="toc-content" id="toc-content-auto"></div>
 </div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">Optimize a PARTITION - SELECT query up to 60x faster</h1><div class="post-meta">
         <div class="post-meta-line"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span></div>
-        <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-02-12">2023-02-12</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;1335 words&nbsp;
+        <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-02-12">2023-02-12</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;1377 words&nbsp;
             <i class="far fa-clock fa-fw" aria-hidden="true"></i>&nbsp;7 minutes&nbsp;</div>
     </div><div class="details toc" id="toc-static" data-kept="">
         <div class="details-summary toc-title">
@@ -409,11 +409,12 @@ There are two fundamental restrictions on when this method can be used:</p>
 </span><span class="lnt">12
 </span><span class="lnt">13
 </span><span class="lnt">14
+</span><span class="lnt">15
 </span></code></pre></td>
 <td class="lntd">
 <pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">WITH</span><span class="w"> </span><span class="k">map</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">SELECT</span><span class="w"> 
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">key_id</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">DISTINCT</span><span class="p">(</span><span class="n">key_id</span><span class="p">),</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">timestamp</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">SELECT</span><span class="w">
@@ -422,7 +423,8 @@ There are two fundamental restrictions on when this method can be used:</p>
 </span></span></span><span class="line"><span class="cl"><span class="w">     </span><span class="n">rank</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">key_id</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">rank</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">FROM</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">dbData</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">where</span><span class="w"> </span><span class="s2">&#34;timestamp&#34;</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">10000</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">key_id</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">100</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">-- filtering stuff depends on business logic
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="w">    </span><span class="k">where</span><span class="w"> </span><span class="s2">&#34;timestamp&#34;</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">10000</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">key_id</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">100</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">)</span><span class="w"> </span><span class="n">sub</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">rank</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="k">map</span><span class="p">;</span><span class="w"> 
 </span></span></span></code></pre></td></tr></table>
@@ -468,11 +470,12 @@ There are two fundamental restrictions on when this method can be used:</p>
 </span><span class="lnt">17
 </span><span class="lnt">18
 </span><span class="lnt">19
+</span><span class="lnt">20
 </span></code></pre></td>
 <td class="lntd">
 <pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">WITH</span><span class="w"> </span><span class="k">map</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">SELECT</span><span class="w"> 
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">key_id</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">DISTINCT</span><span class="p">(</span><span class="n">key_id</span><span class="p">),</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">timestamp</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">SELECT</span><span class="w">
@@ -481,7 +484,8 @@ There are two fundamental restrictions on when this method can be used:</p>
 </span></span></span><span class="line"><span class="cl"><span class="w">     </span><span class="n">rank</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">key_id</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">rank</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">FROM</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">dbData</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">where</span><span class="w"> </span><span class="s2">&#34;timestamp&#34;</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">10000</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">key_id</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">100</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">-- filtering stuff depends on business logic
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="w">    </span><span class="k">where</span><span class="w"> </span><span class="s2">&#34;timestamp&#34;</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">10000</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">key_id</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">100</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">)</span><span class="w"> </span><span class="n">sub</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">rank</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> 
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">SELECT</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">dbKey</span><span class="p">.</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">dbData</span><span class="p">.</span><span class="o">*</span><span class="w">
@@ -494,7 +498,15 @@ There are two fundamental restrictions on when this method can be used:</p>
 </div><p>The reason we build the <code>map</code> first is that the select list in <code>map</code> are all stored in the index,
 which satisfied requirement <code>2</code> in the documentation,
 and later when we query <code>dbData</code> , we can still have Index Scan.</p>
-<p>Here&rsquo;s the example <a href="https://explain.dalibo.com/plan/86114340afae7349" target="_blank" rel="noopener noreffer "> query plan </a></p>
+<p>Here&rsquo;s the example</p>
+<ul>
+<li><a href="https://dbfiddle.uk/xbKuDXER" target="_blank" rel="noopener noreffer ">db&lt;&gt;fiddle</a></li>
+<li><a href="https://explain.dalibo.com/plan/86114340afae7349" target="_blank" rel="noopener noreffer ">query plan </a></li>
+</ul>
+<blockquote>
+<p><strong>UPDATE</strong>:
+The <code>key_id</code> in <code>map</code> should be unique, or there will be duplicated keys with same timestamp, so I added <code>DISTINCT(key_id)</code> to the <code>map</code> query.</p>
+</blockquote>
 <h2 id="final-choice-i-want-them-all">Final choice: I want them all!</h2>
 <p>We decided to use this optimized query to build the materialized view,
 and maintain a materialized view (we call it <code>mat_view</code> for short) management system to organize the creation, deletion of these mat_views.</p>
