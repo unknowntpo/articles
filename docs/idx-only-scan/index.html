@@ -6,7 +6,7 @@
         <meta name="robots" content="noodp" />
         <title>Optimize a PARTITION - SELECT query up to 60x faster - Known, Unknown, Unknowable</title><meta name="Description" content="My secret universe"><meta property="og:title" content="Optimize a PARTITION - SELECT query up to 60x faster" />
 <meta property="og:description" content="This post demonstrates my experience of optimizing a PARTITION - SELECT query, and how I made it up to 60x faster.
-Original Query and the use case Our App is a simple excel data version control system, the data is organized by project, key and data is stored in seperated table called dbKey and dbData .
+Original Query and the use case Our App is a simple excel data version control system, the data is organized by project, key and data is stored in seperated table called dbKey and dbData.
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 create table dbKey ( id serial , project_id int, -- keys goes here -- NOTE: key can be 1." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://blog.unknowntpo.me/idx-only-scan/" /><meta property="og:image" content="https://blog.unknowntpo.me/logo.png"/><meta property="article:section" content="posts" />
@@ -18,7 +18,7 @@ Original Query and the use case Our App is a simple excel data version control s
 
 <meta name="twitter:title" content="Optimize a PARTITION - SELECT query up to 60x faster"/>
 <meta name="twitter:description" content="This post demonstrates my experience of optimizing a PARTITION - SELECT query, and how I made it up to 60x faster.
-Original Query and the use case Our App is a simple excel data version control system, the data is organized by project, key and data is stored in seperated table called dbKey and dbData .
+Original Query and the use case Our App is a simple excel data version control system, the data is organized by project, key and data is stored in seperated table called dbKey and dbData.
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 create table dbKey ( id serial , project_id int, -- keys goes here -- NOTE: key can be 1."/>
 <meta name="application-name" content="Known, Unknown, Unknowable.">
 <meta name="apple-mobile-web-app-title" content="Known, Unknown, Unknowable."><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
@@ -133,7 +133,7 @@ and how I made it up to 60x faster.</p>
 <h2 id="original-query-and-the-use-case">Original Query and the use case</h2>
 <p>Our App is a simple excel data version control system,
 the data is organized by project,
-key and data is stored in seperated table called <code>dbKey</code> and <code>dbData</code> .</p>
+key and data is stored in seperated table called <code>dbKey</code> and <code>dbData</code>.</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt"> 1
@@ -187,7 +187,7 @@ key and data is stored in seperated table called <code>dbKey</code> and <code>db
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">);</span><span class="w">
 </span></span></span></code></pre></td></tr></table>
 </div>
-</div><p>Every time we need to get specific version of data (let&rsquo;s say: version <code>2</code> ), we access <code>sheet_version</code>  table first,
+</div><p>Every time we need to get specific version of data (let&rsquo;s say: version <code>2</code>), we access <code>sheet_version</code> table first,
 and get the <code>sheet_version.timestamp</code> to construct the <code>PARTITION - SELECT</code> query.</p>
 <p>To get the actual data, we need to do these steps:</p>
 <ol>
@@ -231,13 +231,18 @@ and get the <code>sheet_version.timestamp</code> to construct the <code>PARTITIO
 </span></span></span></code></pre></td></tr></table>
 </div>
 </div><p>Here&rsquo;s the <a href="https://dbfiddle.uk/CKXXlQUE" target="_blank" rel="noopener noreffer ">db&lt;&gt;fiddle</a> you can play with this query.</p>
-<blockquote>
-<p>We choose this design because it can save a lot of space to store every version of data.
-If version <code>2</code> has 10 keys, each key has 50 data,
-and if we change data under only 1 key, we only have to re-insert all data under this modified key.
+<div class="details admonition info open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-info-circle fa-fw" aria-hidden="true"></i>Info<i class="details-icon fas fa-angle-right fa-fw" aria-hidden="true"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content">We choose this design because it can save a lot of space to store every version of data.
+If version <code>2</code> has <code>10</code> keys, each key has <code>50</code> data,
+and if we change data under only <code>1</code> key, we only have to re-insert all data under this modified key.
 and only need to insert <code>50</code> data.
-Of course, this design has some limitations, but in this post, let&rsquo;s focus on the <code>PARTITION - SELECT</code> query optimization.</p>
-</blockquote>
+Of course, this design has some limitations, but in this post, let&rsquo;s focus on the <code>PARTITION - SELECT</code> query optimization.</div>
+        </div>
+    </div>
 <h2 id="identifying-the-root-cause">Identifying the root cause</h2>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
@@ -276,8 +281,8 @@ Of course, this design has some limitations, but in this post, let&rsquo;s focus
 <li>partition it by <code>key_id</code>, and rank the timestamp.</li>
 <li>Join it with <code>dbKey</code> table with <code>rank=1</code> and <code>finalDBData.key_id = dbKey.id</code></li>
 </ol>
-<p>Planner tends to range over every row in data table to get <code>rank=1</code> data
-because the <code>rank=1</code> <code>key_id - timestamp</code> can be anywhere in the whole table.</p>
+<p>Planner tends to range over every row in data table to get <code>rank=1</code> data because the <code>rank=1</code> <code>key_id - timestamp</code> can be anywhere
+in the whole table.</p>
 <p>This query it&rsquo;s so slow, we current have about <code>30000</code> keys in key table,
 each project has about <code>2000</code> keys, and almost <code>100</code> milion
 data rows in data table,
@@ -380,8 +385,8 @@ it usually takes at least <code>60</code> second to get the particular version o
 <p>We can use materialized view to cache the result set of particalar version of data,
 but the first one who needs to get data still suffers from the slow query.</p>
 <h2 id="improvement-index-only-scan">Improvement: Index-Only Scan</h2>
-<p>But this query still can be better,</p>
-<p>There&rsquo;s a new feature introduced in PostgreSQL 9.2, which allow us to get data from index itself, without touching the actual table data.</p>
+<p>But this query still can be better.
+There&rsquo;s a new feature introduced in PostgreSQL 9.2, which allow us to get data from index itself, without touching the actual table data.</p>
 <p>The <a href="https://www.postgresql.org/docs/current/indexes-index-only-scans.html" target="_blank" rel="noopener noreffer ">documentation</a> stats that
 There are two fundamental restrictions on when this method can be used:</p>
 <blockquote>
@@ -392,7 +397,7 @@ There are two fundamental restrictions on when this method can be used:</p>
 </blockquote>
 <p>The first one is staicfied because we are using <code>B-tree</code> index.</p>
 <p>The second one can be satisfied by modifying our SQL query,</p>
-<p>We can build the mapping between key_id and the <code>rank=1</code> timestamp first,</p>
+<p>We can build the map between key_id and the <code>rank=1</code> timestamp first,</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt"> 1
@@ -448,7 +453,7 @@ There are two fundamental restrictions on when this method can be used:</p>
 </span></span><span class="line"><span class="cl">      4 |     90303
 </span></span></code></pre></td></tr></table>
 </div>
-</div><p>and then, get actual data from <code>dbData</code> with specific <code>key_id</code> and <code>timestamp</code> pair.</p>
+</div><p>And then, get actual data from <code>dbData</code> with specific <code>key_id</code> and <code>timestamp</code> pair.</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt"> 1
@@ -495,7 +500,7 @@ There are two fundamental restrictions on when this method can be used:</p>
 </span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="k">INNER</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">dbData</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">dbData</span><span class="p">.</span><span class="n">key_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="n">key_id</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="k">timestamp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dbData</span><span class="p">.</span><span class="k">timestamp</span><span class="p">;</span><span class="w">
 </span></span></span></code></pre></td></tr></table>
 </div>
-</div><p>The reason we build the <code>map</code> first is that the select list in <code>map</code> are all stored in the index,
+</div><p>The reason we build the <code>map</code> first is that the SELECT list in <code>map</code> are all stored in the index,
 which satisfied requirement <code>2</code> in the documentation,
 and later when we query <code>dbData</code> , we can still have Index Scan.</p>
 <p>Here&rsquo;s the example</p>
@@ -503,10 +508,15 @@ and later when we query <code>dbData</code> , we can still have Index Scan.</p>
 <li><a href="https://dbfiddle.uk/xbKuDXER" target="_blank" rel="noopener noreffer ">db&lt;&gt;fiddle</a></li>
 <li><a href="https://explain.dalibo.com/plan/86114340afae7349" target="_blank" rel="noopener noreffer ">query plan </a></li>
 </ul>
-<blockquote>
-<p><strong>UPDATE</strong>:
-The <code>key_id</code> in <code>map</code> should be unique, or there will be duplicated keys with same timestamp, so I added <code>DISTINCT(key_id)</code> to the <code>map</code> query.</p>
-</blockquote>
+<div class="details admonition note open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-pencil-alt fa-fw" aria-hidden="true"></i>Note<i class="details-icon fas fa-angle-right fa-fw" aria-hidden="true"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content"><strong>UPDATE</strong>:
+The <code>key_id</code> in <code>map</code> should be unique, or there will be duplicated keys with same timestamp, so I added <code>DISTINCT(key_id)</code> to the <code>map</code> query.</div>
+        </div>
+    </div>
 <h2 id="final-choice-i-want-them-all">Final choice: I want them all!</h2>
 <p>We decided to use this optimized query to build the materialized view,
 and maintain a materialized view (we call it <code>mat_view</code> for short) management system to organize the creation, deletion of these mat_views.</p>

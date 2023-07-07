@@ -24,7 +24,7 @@ The Goal 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27
     <author>unknowntpo</author>
     <guid>https://blog.unknowntpo.me/idx-only-scan/</guid>
     <description><![CDATA[This post demonstrates my experience of optimizing a PARTITION - SELECT query, and how I made it up to 60x faster.
-Original Query and the use case Our App is a simple excel data version control system, the data is organized by project, key and data is stored in seperated table called dbKey and dbData .
+Original Query and the use case Our App is a simple excel data version control system, the data is organized by project, key and data is stored in seperated table called dbKey and dbData.
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 create table dbKey ( id serial , project_id int, -- keys goes here -- NOTE: key can be 1.]]></description>
 </item>
 </channel>

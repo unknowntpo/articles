@@ -8,7 +8,7 @@ and how I made it up to 60x faster.
 
 Our App is a simple excel data version control system,
 the data is organized by project,
-key and data is stored in seperated table called `dbKey` and `dbData` .
+key and data is stored in seperated table called `dbKey` and `dbData`.
 
 ```sql
 create table dbKey (
@@ -38,7 +38,7 @@ create table sheet_version (
 );
 ```
 
-Every time we need to get specific version of data (let's say: version `2` ), we access `sheet_version`  table first,
+Every time we need to get specific version of data (let's say: version `2`), we access `sheet_version` table first,
 and get the `sheet_version.timestamp` to construct the `PARTITION - SELECT` query. 
 
 To get the actual data, we need to do these steps:
@@ -67,11 +67,14 @@ and finalDBData.key_id = dbKey.id;
 
 Here's the [db<>fiddle](https://dbfiddle.uk/CKXXlQUE) you can play with this query.
 
->We choose this design because it can save a lot of space to store every version of data.
-If version `2` has 10 keys, each key has 50 data,
-and if we change data under only 1 key, we only have to re-insert all data under this modified key.
+{{< admonition info >}}
+We choose this design because it can save a lot of space to store every version of data.
+If version `2` has `10` keys, each key has `50` data,
+and if we change data under only `1` key, we only have to re-insert all data under this modified key.
 and only need to insert `50` data.
 Of course, this design has some limitations, but in this post, let's focus on the `PARTITION - SELECT` query optimization.
+
+{{< /admonition >}}
 
 ## Identifying the root cause
 
@@ -98,8 +101,8 @@ This query is slow because it has to:
 2. partition it by `key_id`, and rank the timestamp.
 3. Join it with `dbKey` table with `rank=1` and `finalDBData.key_id = dbKey.id`
 
-Planner tends to range over every row in data table to get `rank=1` data
-because the `rank=1` `key_id - timestamp` can be anywhere in the whole table. 
+Planner tends to range over every row in data table to get `rank=1` data because the `rank=1` `key_id - timestamp` can be anywhere
+in the whole table. 
 
 This query it's so slow, we current have about `30000` keys in key table,
 each project has about `2000` keys, and almost `100` milion
@@ -167,8 +170,7 @@ but the first one who needs to get data still suffers from the slow query.
 
 ## Improvement: Index-Only Scan
 
-But this query still can be better,
-
+But this query still can be better.
 There's a new feature introduced in PostgreSQL 9.2, which allow us to get data from index itself, without touching the actual table data.
 
 The [documentation](https://www.postgresql.org/docs/current/indexes-index-only-scans.html) stats that
@@ -181,7 +183,7 @@ The first one is staicfied because we are using `B-tree` index.
 
 The second one can be satisfied by modifying our SQL query,
 
-We can build the mapping between key_id and the `rank=1` timestamp first,
+We can build the map between key_id and the `rank=1` timestamp first,
 
 ```sql
 WITH map AS (
@@ -212,7 +214,7 @@ Result will be like:
       4 |     90303
 ```
 
-and then, get actual data from `dbData` with specific `key_id` and `timestamp` pair.
+And then, get actual data from `dbData` with specific `key_id` and `timestamp` pair.
 
 ```sql
 WITH map AS (
@@ -237,7 +239,7 @@ FROM
  INNER JOIN dbData ON dbData.key_id = m.key_id AND m.timestamp = dbData.timestamp;
 ```
 
-The reason we build the `map` first is that the select list in `map` are all stored in the index,
+The reason we build the `map` first is that the SELECT list in `map` are all stored in the index,
 which satisfied requirement `2` in the documentation,
 and later when we query `dbData` , we can still have Index Scan.
 
@@ -245,11 +247,10 @@ Here's the example
 - [db<>fiddle](https://dbfiddle.uk/xbKuDXER)
 - [query plan ](https://explain.dalibo.com/plan/86114340afae7349)
 
->**UPDATE**:
->The `key_id` in `map` should be unique, or there will be duplicated keys with same timestamp, so I added `DISTINCT(key_id)` to the `map` query.
-
-
-
+{{< admonition >}}
+**UPDATE**:
+The `key_id` in `map` should be unique, or there will be duplicated keys with same timestamp, so I added `DISTINCT(key_id)` to the `map` query.
+{{< /admonition >}}
 
 
 ## Final choice: I want them all! 
