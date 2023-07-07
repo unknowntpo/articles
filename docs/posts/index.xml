@@ -1,8 +1,8 @@
 <rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
     <channel>
-        <title>All Posts - Known, Unknown, Unknownable</title>
+        <title>All Posts - Known, Unknown, Unknowable</title>
         <link>https://blog.unknowntpo.me/posts/</link>
-        <description>All Posts | Known, Unknown, Unknownable</description>
+        <description>All Posts | Known, Unknown, Unknowable</description>
         <generator>Hugo -- gohugo.io</generator><language>en</language><managingEditor>e850506@gmail.com (unknowntpo)</managingEditor>
             <webMaster>e850506@gmail.com (unknowntpo)</webMaster><lastBuildDate>Tue, 07 Mar 2023 10:03:56 &#43;0800</lastBuildDate><atom:link href="https://blog.unknowntpo.me/posts/" rel="self" type="application/rss+xml" /><item>
     <title>Build Nested JSON in PostgreSQL</title>

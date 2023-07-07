@@ -4,14 +4,14 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
-        <title>Optimize a PARTITION - SELECT query up to 60x faster - Known, Unknown, Unknownable</title><meta name="Description" content="My secret universe"><meta property="og:title" content="Optimize a PARTITION - SELECT query up to 60x faster" />
+        <title>Optimize a PARTITION - SELECT query up to 60x faster - Known, Unknown, Unknowable</title><meta name="Description" content="My secret universe"><meta property="og:title" content="Optimize a PARTITION - SELECT query up to 60x faster" />
 <meta property="og:description" content="This post demonstrates my experience of optimizing a PARTITION - SELECT query, and how I made it up to 60x faster.
 Original Query and the use case Our App is a simple excel data version control system, the data is organized by project, key and data is stored in seperated table called dbKey and dbData .
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 create table dbKey ( id serial , project_id int, -- keys goes here -- NOTE: key can be 1." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://blog.unknowntpo.me/idx-only-scan/" /><meta property="og:image" content="https://blog.unknowntpo.me/logo.png"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2023-02-12T14:23:03+08:00" />
-<meta property="article:modified_time" content="2023-02-25T15:58:53+08:00" /><meta property="og:site_name" content="Known, Unknown, Unknownable." />
+<meta property="article:modified_time" content="2023-05-30T15:27:29+08:00" /><meta property="og:site_name" content="Known, Unknown, Unknowable." />
 
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://blog.unknowntpo.me/logo.png"/>
@@ -20,8 +20,8 @@ Original Query and the use case Our App is a simple excel data version control s
 <meta name="twitter:description" content="This post demonstrates my experience of optimizing a PARTITION - SELECT query, and how I made it up to 60x faster.
 Original Query and the use case Our App is a simple excel data version control system, the data is organized by project, key and data is stored in seperated table called dbKey and dbData .
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 create table dbKey ( id serial , project_id int, -- keys goes here -- NOTE: key can be 1."/>
-<meta name="application-name" content="Known, Unknown, Unknownable.">
-<meta name="apple-mobile-web-app-title" content="Known, Unknown, Unknownable."><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+<meta name="application-name" content="Known, Unknown, Unknowable.">
+<meta name="apple-mobile-web-app-title" content="Known, Unknown, Unknowable."><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://blog.unknowntpo.me/idx-only-scan/" /><link rel="prev" href="https://blog.unknowntpo.me/chatgpt-first-glance/" /><link rel="next" href="https://blog.unknowntpo.me/syncpool/" /><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
         <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css"></noscript><link rel="preload" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -35,7 +35,7 @@ Original Query and the use case Our App is a simple excel data version control s
             "@type": "WebPage",
             "@id": "https:\/\/blog.unknowntpo.me\/idx-only-scan\/"
         },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "performance, PostgreSQL","wordcount":  1377 ,
-        "url": "https:\/\/blog.unknowntpo.me\/idx-only-scan\/","datePublished": "2023-02-12T14:23:03+08:00","dateModified": "2023-02-25T15:58:53+08:00","publisher": {
+        "url": "https:\/\/blog.unknowntpo.me\/idx-only-scan\/","datePublished": "2023-02-12T14:23:03+08:00","dateModified": "2023-05-30T15:27:29+08:00","publisher": {
             "@type": "Organization",
             "name": "xxxx"},"author": {
                 "@type": "Person",
@@ -48,7 +48,7 @@ Original Query and the use case Our App is a simple excel data version control s
         <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
     <div class="header-wrapper">
         <div class="header-title">
-            <a href="/" title="Known, Unknown, Unknownable"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw' aria-hidden='true'></i></span>Known, Unknown, Unknownable.</a>
+            <a href="/" title="Known, Unknown, Unknowable"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw' aria-hidden='true'></i></span>Known, Unknown, Unknowable.</a>
         </div>
         <div class="menu">
             <div class="menu-inner"><a class="menu-item" href="/posts/"> Posts </a><a class="menu-item" href="/tags/"> Tags </a><a class="menu-item" href="/categories/"> Categories </a><a class="menu-item" href="https://github.com/unknowntpo/" rel="noopener noreffer" target="_blank"><i class='fab fa-github fa-fw' aria-hidden='true'></i> Github </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
@@ -71,7 +71,7 @@ Original Query and the use case Our App is a simple excel data version control s
     <div class="header-container">
         <div class="header-wrapper">
             <div class="header-title">
-                <a href="/" title="Known, Unknown, Unknownable"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw' aria-hidden='true'></i></span>Known, Unknown, Unknownable.</a>
+                <a href="/" title="Known, Unknown, Unknowable"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw' aria-hidden='true'></i></span>Known, Unknown, Unknowable.</a>
             </div>
             <div class="menu-toggle" id="menu-toggle-mobile">
                 <span></span><span></span><span></span>
@@ -518,8 +518,8 @@ and maintain a materialized view (we call it <code>mat_view</code> for short) ma
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
-                <span>Updated on 2023-02-25&nbsp;<a class="git-hash" href="https://github.com/unknowntpo/commit/53c2ee15410fb4a6ab90e51b6f9f5b5ee45c6d5a" target="_blank" title="commit by unknowntpo(e850506@gmail.com) 53c2ee15410fb4a6ab90e51b6f9f5b5ee45c6d5a: arange idx-only-scan post, add some word and plot on explain.dalibo.com">
-                                    <i class="fas fa-hashtag fa-fw" aria-hidden="true"></i>53c2ee1</a></span>
+                <span>Updated on 2023-05-30&nbsp;<a class="git-hash" href="https://github.com/unknowntpo/commit/339a83b00da4ef79a13d85ab53079a1b5638076d" target="_blank" title="commit by unknowntpo(e850506@gmail.com) 339a83b00da4ef79a13d85ab53079a1b5638076d: Index_Only_Scan: add DISTINCT(key_id) to map">
+                                    <i class="fas fa-hashtag fa-fw" aria-hidden="true"></i>339a83b</a></span>
             </div></div>
         <div class="post-info-line">
             <div class="post-info-md"><span>
