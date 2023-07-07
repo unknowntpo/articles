@@ -180,11 +180,13 @@ There are two fundamental restrictions on when this method can be used:
 > 2. The query must reference only columns stored in the index. For example, given an index on columns x and y of a table that also has a column z, these queries could use index-only scans:
 > 3. If these two fundamental requirements are met, then all the data values required by the query are available from the index, so an index-only scan is physically possible. But there is an additional requirement for any table scan in PostgreSQL: it must verify that each retrieved row be “visible” to the query's MVCC snapshot, as discussed in Chapter 13. Visibility information is not stored in index entries, only in heap entries; so at first glance it would seem that every row retrieval would require a heap access anyway. And this is indeed the case, if the table row has been modified recently. However, for seldom-changing data there is a way around this problem. PostgreSQL tracks, for each page in a table's heap, whether all rows stored in that page are old enough to be visible to all current and future transactions. This information is stored in a bit in the table's visibility map. An index-only scan, after finding a candidate index entry, checks the visibility map bit for the corresponding heap page. If it's set, the row is known visible and so the data can be returned with no further work. If it's not set, the heap entry must be visited to find out whether it's visible, so no performance advantage is gained over a standard index scan. Even in the successful case, this approach trades visibility map accesses for heap accesses; but since the visibility map is four orders of magnitude smaller than the heap it describes, far less physical I/O is needed to access it. In most situations the visibility map remains cached in memory all the time.
 
-The first one is staicfied because we are using `B-tree` index.
+Let's verify if all these restrictions is satisfied:
 
-The second one can be satisfied by modifying our SQL query,
-
-The third one means all data in that page must be visible in visibility map, and it's also satisfied because the data is append-only.  
+{{< admonition info >}}
+1. It's staicfied because we are using `B-tree` index.
+2. It's satisfied by modifying our SQL query,
+3. It means all data in that page must be visible in visibility map, and it's also satisfied because the data is append-only.  
+{{< /admonition >}}
 
 We can build the map between key_id and the `rank=1` timestamp first,
 
@@ -261,6 +263,7 @@ The `key_id` in `map` should be unique, or there will be duplicated keys with sa
 We decided to use this optimized query to build the materialized view,
 and maintain a materialized view (we call it `mat_view` for short) management system to organize the creation, deletion of these mat_views.
 
-Reference:
+# Reference:
+- [11.9. Index-Only Scans and Covering Indexes](https://www.postgresql.org/docs/current/indexes-index-only-scans.html)
 - [PostgreSQL Wiki]( https://wiki.postgresql.org/wiki/Index-only_scans )
 
