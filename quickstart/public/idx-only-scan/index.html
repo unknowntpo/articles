@@ -11,7 +11,7 @@ Original Query and the use case Our App is a simple excel data version control s
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://blog.unknowntpo.me/idx-only-scan/" /><meta property="og:image" content="https://blog.unknowntpo.me/logo.png"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2023-02-12T14:23:03+08:00" />
-<meta property="article:modified_time" content="2023-05-30T15:27:29+08:00" /><meta property="og:site_name" content="Known, Unknown, Unknowable." />
+<meta property="article:modified_time" content="2023-07-07T10:41:41+08:00" /><meta property="og:site_name" content="Known, Unknown, Unknowable." />
 
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://blog.unknowntpo.me/logo.png"/>
@@ -34,8 +34,8 @@ Original Query and the use case Our App is a simple excel data version control s
         "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": "https:\/\/blog.unknowntpo.me\/idx-only-scan\/"
-        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "performance, PostgreSQL","wordcount":  1377 ,
-        "url": "https:\/\/blog.unknowntpo.me\/idx-only-scan\/","datePublished": "2023-02-12T14:23:03+08:00","dateModified": "2023-05-30T15:27:29+08:00","publisher": {
+        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "performance, PostgreSQL","wordcount":  1671 ,
+        "url": "https:\/\/blog.unknowntpo.me\/idx-only-scan\/","datePublished": "2023-02-12T14:23:03+08:00","dateModified": "2023-07-07T10:41:41+08:00","publisher": {
             "@type": "Organization",
             "name": "xxxx"},"author": {
                 "@type": "Person",
@@ -108,8 +108,8 @@ Original Query and the use case Our App is a simple excel data version control s
     <div class="toc-content" id="toc-content-auto"></div>
 </div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">Optimize a PARTITION - SELECT query up to 60x faster</h1><div class="post-meta">
         <div class="post-meta-line"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span></div>
-        <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-02-12">2023-02-12</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;1377 words&nbsp;
-            <i class="far fa-clock fa-fw" aria-hidden="true"></i>&nbsp;7 minutes&nbsp;</div>
+        <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-02-12">2023-02-12</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;1671 words&nbsp;
+            <i class="far fa-clock fa-fw" aria-hidden="true"></i>&nbsp;8 minutes&nbsp;</div>
     </div><div class="details toc" id="toc-static" data-kept="">
         <div class="details-summary toc-title">
             <span>Contents</span>
@@ -393,10 +393,12 @@ There are two fundamental restrictions on when this method can be used:</p>
 <ol>
 <li>The index type must support index-only scans. B-tree indexes always do. GiST and SP-GiST indexes support index-only scans for some operator classes but not others. Other index types have no support. The underlying requirement is that the index must physically store, or else be able to reconstruct, the original data value for each index entry. As a counterexample, GIN indexes cannot support index-only scans because each index entry typically holds only part of the original data value.</li>
 <li>The query must reference only columns stored in the index. For example, given an index on columns x and y of a table that also has a column z, these queries could use index-only scans:</li>
+<li>If these two fundamental requirements are met, then all the data values required by the query are available from the index, so an index-only scan is physically possible. But there is an additional requirement for any table scan in PostgreSQL: it must verify that each retrieved row be “visible” to the query&rsquo;s MVCC snapshot, as discussed in Chapter 13. Visibility information is not stored in index entries, only in heap entries; so at first glance it would seem that every row retrieval would require a heap access anyway. And this is indeed the case, if the table row has been modified recently. However, for seldom-changing data there is a way around this problem. PostgreSQL tracks, for each page in a table&rsquo;s heap, whether all rows stored in that page are old enough to be visible to all current and future transactions. This information is stored in a bit in the table&rsquo;s visibility map. An index-only scan, after finding a candidate index entry, checks the visibility map bit for the corresponding heap page. If it&rsquo;s set, the row is known visible and so the data can be returned with no further work. If it&rsquo;s not set, the heap entry must be visited to find out whether it&rsquo;s visible, so no performance advantage is gained over a standard index scan. Even in the successful case, this approach trades visibility map accesses for heap accesses; but since the visibility map is four orders of magnitude smaller than the heap it describes, far less physical I/O is needed to access it. In most situations the visibility map remains cached in memory all the time.</li>
 </ol>
 </blockquote>
 <p>The first one is staicfied because we are using <code>B-tree</code> index.</p>
 <p>The second one can be satisfied by modifying our SQL query,</p>
+<p>The third one means all data in that page must be visible in visibility map, and it&rsquo;s also satisfied because the data is append-only.</p>
 <p>We can build the map between key_id and the <code>rank=1</code> timestamp first,</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
@@ -528,8 +530,8 @@ and maintain a materialized view (we call it <code>mat_view</code> for short) ma
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
-                <span>Updated on 2023-05-30&nbsp;<a class="git-hash" href="https://github.com/unknowntpo/commit/339a83b00da4ef79a13d85ab53079a1b5638076d" target="_blank" title="commit by unknowntpo(e850506@gmail.com) 339a83b00da4ef79a13d85ab53079a1b5638076d: Index_Only_Scan: add DISTINCT(key_id) to map">
-                                    <i class="fas fa-hashtag fa-fw" aria-hidden="true"></i>339a83b</a></span>
+                <span>Updated on 2023-07-07&nbsp;<a class="git-hash" href="https://github.com/unknowntpo/commit/d4faf73b984e27359680e84a1f60923c99547618" target="_blank" title="commit by unknowntpo(e850506@gmail.com) d4faf73b984e27359680e84a1f60923c99547618: (idx only scan): fix typo, and add info shortcode">
+                                    <i class="fas fa-hashtag fa-fw" aria-hidden="true"></i>d4faf73</a></span>
             </div></div>
         <div class="post-info-line">
             <div class="post-info-md"><span>
