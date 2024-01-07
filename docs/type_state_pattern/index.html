@@ -4,38 +4,36 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
-        <title>ChatGPT First Glance - Known, Unknown, Unknowable</title><meta name="Description" content="My secret universe"><meta property="og:title" content="ChatGPT First Glance" />
-<meta property="og:description" content="This is my first glance of ChatGPT, and I ask her to generate a peice of code in Haskell, which can map a function to a list.
-The result she generated is totally correct, and can be run in playground.
-1 2 3 4 5 6 7 8 9 10 11 12 addOneToEach :: [Int] -&gt; [Int] addOneToEach xs = map (&#43;1) xs myMap :: (a -&gt; b) -&gt; [a] -&gt; [b] myMap _ [] = [] myMap f (x:xs) = f x : myMap f xs main = do let myList = [1, 2, 3, 4] let doubledList = myMap (*2) myList print doubledList -- Output: [2,4,6,8] Here&rsquo;s the link to our chat: https://sharegpt." />
+        <title>API Design: Use type state pattern to avoid ambiguous option flags - Known, Unknown, Unknowable</title><meta name="Description" content="My secret universe"><meta property="og:title" content="API Design: Use type state pattern to avoid ambiguous option flags" />
+<meta property="og:description" content="For example，ZADD is a command that add member with score to sorted set, and it can accept NX or XX as option.
+1 2 ZADD key [NX | XX] [GT | LT] [CH] [INCR] score member [score member ...] XX: Only update elements that already exist. Don&rsquo;t add new elements. NX: Only add new elements. Don&rsquo;t update already existing elements. NX 與 XX 只能選一個，在 go-redis 是用這樣的 structure 來裝 argument, 但這就必須要額外的註解與檢查來告訴使用者 NX, XX 是互斥的。 1 2 3 4 5 6 7 8 type ZAddArgs struct { NX bool XX bool LT bool GT bool Ch bool Members []Z } Ref: go-redis ZAddArgs" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://blog.unknowntpo.me/chatgpt-first-glance/" /><meta property="og:image" content="https://blog.unknowntpo.me/logo.png"/><meta property="article:section" content="posts" />
-<meta property="article:published_time" content="2023-01-21T12:00:58+08:00" />
-<meta property="article:modified_time" content="2023-01-21T12:06:26+08:00" /><meta property="og:site_name" content="Known, Unknown, Unknowable." />
+<meta property="og:url" content="https://blog.unknowntpo.me/type_state_pattern/" /><meta property="og:image" content="https://blog.unknowntpo.me/logo.png"/><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2024-01-07T17:33:24+08:00" />
+<meta property="article:modified_time" content="2024-01-07T17:33:24+08:00" /><meta property="og:site_name" content="Known, Unknown, Unknowable." />
 
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://blog.unknowntpo.me/logo.png"/>
 
-<meta name="twitter:title" content="ChatGPT First Glance"/>
-<meta name="twitter:description" content="This is my first glance of ChatGPT, and I ask her to generate a peice of code in Haskell, which can map a function to a list.
-The result she generated is totally correct, and can be run in playground.
-1 2 3 4 5 6 7 8 9 10 11 12 addOneToEach :: [Int] -&gt; [Int] addOneToEach xs = map (&#43;1) xs myMap :: (a -&gt; b) -&gt; [a] -&gt; [b] myMap _ [] = [] myMap f (x:xs) = f x : myMap f xs main = do let myList = [1, 2, 3, 4] let doubledList = myMap (*2) myList print doubledList -- Output: [2,4,6,8] Here&rsquo;s the link to our chat: https://sharegpt."/>
+<meta name="twitter:title" content="API Design: Use type state pattern to avoid ambiguous option flags"/>
+<meta name="twitter:description" content="For example，ZADD is a command that add member with score to sorted set, and it can accept NX or XX as option.
+1 2 ZADD key [NX | XX] [GT | LT] [CH] [INCR] score member [score member ...] XX: Only update elements that already exist. Don&rsquo;t add new elements. NX: Only add new elements. Don&rsquo;t update already existing elements. NX 與 XX 只能選一個，在 go-redis 是用這樣的 structure 來裝 argument, 但這就必須要額外的註解與檢查來告訴使用者 NX, XX 是互斥的。 1 2 3 4 5 6 7 8 type ZAddArgs struct { NX bool XX bool LT bool GT bool Ch bool Members []Z } Ref: go-redis ZAddArgs"/>
 <meta name="application-name" content="Known, Unknown, Unknowable.">
 <meta name="apple-mobile-web-app-title" content="Known, Unknown, Unknowable."><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://blog.unknowntpo.me/chatgpt-first-glance/" /><link rel="prev" href="https://blog.unknowntpo.me/my-first-post/" /><link rel="next" href="https://blog.unknowntpo.me/idx-only-scan/" /><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://blog.unknowntpo.me/type_state_pattern/" /><link rel="prev" href="https://blog.unknowntpo.me/nested-json/" /><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
         <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css"></noscript><link rel="preload" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
         <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css"></noscript><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
-        "headline": "ChatGPT First Glance",
+        "headline": "API Design: Use type state pattern to avoid ambiguous option flags",
         "inLanguage": "en",
         "mainEntityOfPage": {
             "@type": "WebPage",
-            "@id": "https:\/\/blog.unknowntpo.me\/chatgpt-first-glance\/"
-        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","wordcount":  115 ,
-        "url": "https:\/\/blog.unknowntpo.me\/chatgpt-first-glance\/","datePublished": "2023-01-21T12:00:58+08:00","dateModified": "2023-01-21T12:06:26+08:00","publisher": {
+            "@id": "https:\/\/blog.unknowntpo.me\/type_state_pattern\/"
+        },"image": ["https:\/\/blog.unknowntpo.me\/images\/Apple-Devices-Preview.png"],"genre": "posts","keywords": "Go, Redis","wordcount":  115 ,
+        "url": "https:\/\/blog.unknowntpo.me\/type_state_pattern\/","datePublished": "2024-01-07T17:33:24+08:00","dateModified": "2024-01-07T17:33:24+08:00","publisher": {
             "@type": "Organization",
             "name": "xxxx"},"author": {
                 "@type": "Person",
@@ -106,9 +104,9 @@ The result she generated is totally correct, and can be run in playground.
                 <div class="container"><div class="toc" id="toc-auto">
     <h2 class="toc-title">Contents</h2>
     <div class="toc-content" id="toc-content-auto"></div>
-</div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">ChatGPT First Glance</h1><div class="post-meta">
+</div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">API Design: Use type state pattern to avoid ambiguous option flags</h1><div class="post-meta">
         <div class="post-meta-line"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span></div>
-        <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2023-01-21">2023-01-21</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;115 words&nbsp;
+        <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2024-01-07">2024-01-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;115 words&nbsp;
             <i class="far fa-clock fa-fw" aria-hidden="true"></i>&nbsp;One minute&nbsp;</div>
     </div><div class="details toc" id="toc-static" data-kept="">
         <div class="details-summary toc-title">
@@ -116,65 +114,79 @@ The result she generated is totally correct, and can be run in playground.
             <span><i class="details-icon fas fa-angle-right" aria-hidden="true"></i></span>
         </div>
         <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents"></nav></div>
-    </div><div class="content" id="content"><p>This is my first glance of ChatGPT, and I ask her to generate a peice of code in Haskell, which can map a function to a list.</p>
-<p>The result she generated is totally correct, and can be run in <a href="https://play-haskell.tomsmeding.com/saved/Sir1t4Zr" target="_blank" rel="noopener noreffer ">playground</a>.</p>
+    </div><div class="content" id="content"><p>For example，<code>ZADD</code> is a command that add member with score to sorted set, and it can accept <code>NX</code> or <code>XX</code> as option.</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
-</span><span class="lnt"> 2
-</span><span class="lnt"> 3
-</span><span class="lnt"> 4
-</span><span class="lnt"> 5
-</span><span class="lnt"> 6
-</span><span class="lnt"> 7
-</span><span class="lnt"> 8
-</span><span class="lnt"> 9
-</span><span class="lnt">10
-</span><span class="lnt">11
-</span><span class="lnt">12
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-haskell" data-lang="haskell"><span class="line"><span class="cl"><span class="nf">addOneToEach</span> <span class="ow">::</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="ow">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span>
-</span></span><span class="line"><span class="cl"><span class="nf">addOneToEach</span> <span class="n">xs</span> <span class="ow">=</span> <span class="n">map</span> <span class="p">(</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="n">xs</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="nf">myMap</span> <span class="ow">::</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">b</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="ow">-&gt;</span> <span class="p">[</span><span class="n">b</span><span class="p">]</span>
-</span></span><span class="line"><span class="cl"><span class="nf">myMap</span> <span class="kr">_</span> <span class="kt">[]</span> <span class="ow">=</span> <span class="kt">[]</span>
-</span></span><span class="line"><span class="cl"><span class="nf">myMap</span> <span class="n">f</span> <span class="p">(</span><span class="n">x</span><span class="kt">:</span><span class="n">xs</span><span class="p">)</span> <span class="ow">=</span> <span class="n">f</span> <span class="n">x</span> <span class="kt">:</span> <span class="n">myMap</span> <span class="n">f</span> <span class="n">xs</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="nf">main</span> <span class="ow">=</span> <span class="kr">do</span>
-</span></span><span class="line"><span class="cl">   <span class="kr">let</span> <span class="n">myList</span> <span class="ow">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
-</span></span><span class="line"><span class="cl">   <span class="kr">let</span> <span class="n">doubledList</span> <span class="ow">=</span> <span class="n">myMap</span> <span class="p">(</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span> <span class="n">myList</span>
-</span></span><span class="line"><span class="cl">   <span class="n">print</span> <span class="n">doubledList</span>
-</span></span><span class="line"><span class="cl">   <span class="c1">-- Output: [2,4,6,8]</span>
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">ZADD key [NX | XX] [GT | LT] [CH] [INCR] score member [score member
+</span></span><span class="line"><span class="cl">  ...]
 </span></span></code></pre></td></tr></table>
 </div>
-</div><p>Here&rsquo;s the link to our chat: <a href="https://sharegpt.com/c/yedzb1N" target="_blank" rel="noopener noreffer ">https://sharegpt.com/c/yedzb1N</a></p>
-</div><div class="post-footer" id="post-footer">
+</div><ul>
+<li>XX: Only update elements that already exist. Don&rsquo;t add new elements.</li>
+<li>NX: Only add new elements. Don&rsquo;t update already existing elements.
+<code>NX</code> 與 <code>XX</code> 只能選一個，在 go-redis 是用這樣的 structure 來裝 argument, 但這就必須要額外的註解與檢查來告訴使用者 <code>NX</code>, <code>XX</code> 是互斥的。</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">type ZAddArgs struct {
+</span></span><span class="line"><span class="cl">	NX      bool
+</span></span><span class="line"><span class="cl">	XX      bool
+</span></span><span class="line"><span class="cl">	LT      bool
+</span></span><span class="line"><span class="cl">	GT      bool
+</span></span><span class="line"><span class="cl">	Ch      bool
+</span></span><span class="line"><span class="cl">	Members []Z
+</span></span><span class="line"><span class="cl">}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Ref: <a href="https://pkg.go.dev/github.com/redis/go-redis/v9#ZAddArgs" target="_blank" rel="noopener noreffer ">go-redis ZAddArgs</a></p>
+<p>但在 <code>redis/rueidis</code> 裡面提供了 command builder,
+Type System 就會直接禁止你同時設定 <code>NX</code>, <code>XX</code></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">client</span><span class="p">.</span><span class="nf">B</span><span class="p">().</span><span class="nf">Zadd</span><span class="p">().</span><span class="nf">Key</span><span class="p">(</span><span class="s">&#34;1&#34;</span><span class="p">).</span><span class="nf">Nx</span><span class="p">().</span><span class="nf">Gt</span><span class="p">().</span><span class="nf">Ch</span><span class="p">().</span><span class="nf">Incr</span><span class="p">().</span><span class="nf">ScoreMember</span><span class="p">().</span><span class="nf">ScoreMember</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#34;1&#34;</span><span class="p">).</span><span class="nf">ScoreMember</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#34;1&#34;</span><span class="p">).</span><span class="nf">Build</span><span class="p">()</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
-                <span>Updated on 2023-01-21&nbsp;<a class="git-hash" href="https://github.com/unknowntpo/commit/f626295f6c2187017904a04114b7c488599b5eca" target="_blank" title="commit by unknowntpo(e850506@gmail.com) f626295f6c2187017904a04114b7c488599b5eca: fix typo">
-                                    <i class="fas fa-hashtag fa-fw" aria-hidden="true"></i>f626295</a></span>
+                <span>Updated on 2024-01-07</span>
             </div></div>
         <div class="post-info-line">
             <div class="post-info-md"><span>
-                            <a class="link-to-markdown" href="/chatgpt-first-glance/index.md" target="_blank">Read Markdown</a>
+                            <a class="link-to-markdown" href="/type_state_pattern/index.md" target="_blank">Read Markdown</a>
                         </span></div>
             <div class="post-info-share">
-                <span><a href="javascript:void(0);" title="Share on Twitter" data-sharer="twitter" data-url="https://blog.unknowntpo.me/chatgpt-first-glance/" data-title="ChatGPT First Glance"><i class="fab fa-twitter fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="Share on Facebook" data-sharer="facebook" data-url="https://blog.unknowntpo.me/chatgpt-first-glance/"><i class="fab fa-facebook-square fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="Share on Hacker News" data-sharer="hackernews" data-url="https://blog.unknowntpo.me/chatgpt-first-glance/" data-title="ChatGPT First Glance"><i class="fab fa-hacker-news fa-fw" aria-hidden="true"></i></a></span>
+                <span><a href="javascript:void(0);" title="Share on Twitter" data-sharer="twitter" data-url="https://blog.unknowntpo.me/type_state_pattern/" data-title="API Design: Use type state pattern to avoid ambiguous option flags" data-hashtags="Go,Redis"><i class="fab fa-twitter fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="Share on Facebook" data-sharer="facebook" data-url="https://blog.unknowntpo.me/type_state_pattern/" data-hashtag="Go"><i class="fab fa-facebook-square fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="Share on Hacker News" data-sharer="hackernews" data-url="https://blog.unknowntpo.me/type_state_pattern/" data-title="API Design: Use type state pattern to avoid ambiguous option flags"><i class="fab fa-hacker-news fa-fw" aria-hidden="true"></i></a></span>
             </div>
         </div>
     </div>
 
     <div class="post-info-more">
-        <section class="post-tags"></section>
+        <section class="post-tags"><i class="fas fa-tags fa-fw" aria-hidden="true"></i>&nbsp;<a href="/tags/go/">Go</a>,&nbsp;<a href="/tags/redis/">Redis</a></section>
         <section>
             <span><a href="javascript:void(0);" onclick="window.history.back();">Back</a></span>&nbsp;|&nbsp;<span><a href="/">Home</a></span>
         </section>
     </div>
 
-    <div class="post-nav"><a href="/my-first-post/" class="prev" rel="prev" title="My First Post"><i class="fas fa-angle-left fa-fw" aria-hidden="true"></i>My First Post</a>
-            <a href="/idx-only-scan/" class="next" rel="next" title="Optimize a PARTITION - SELECT query up to 60x faster">Optimize a PARTITION - SELECT query up to 60x faster<i class="fas fa-angle-right fa-fw" aria-hidden="true"></i></a></div>
+    <div class="post-nav"><a href="/nested-json/" class="prev" rel="prev" title="Build Nested JSON in PostgreSQL"><i class="fas fa-angle-left fa-fw" aria-hidden="true"></i>Build Nested JSON in PostgreSQL</a></div>
 </div>
 <div id="comments"><div id="utterances" class="comment"></div><noscript>
                 Please enable JavaScript to view the comments powered by <a href="https://utteranc.es/">utterances</a>.

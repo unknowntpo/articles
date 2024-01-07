@@ -93,6 +93,12 @@
     </div><main class="main">
                 <div class="container"><div class="page home" data-home="posts"><div class="home-profile"><div class="home-subtitle"><div id="id-1" class="typeit"></div></div><div class="links"><a href="https://github.com/unknowntpo" title="GitHub" target="_blank" rel="noopener noreffer me"><i class="fab fa-github fa-fw" aria-hidden="true"></i></a></div></div>
 <article class="single summary" itemscope itemtype="http://schema.org/Article"><h1 class="single-title" itemprop="name headline">
+        <a href="/type_state_pattern/">API Design: Use type state pattern to avoid ambiguous option flags</a>
+    </h1><div class="post-meta"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span>&nbsp;<span class="post-publish">published on <time datetime="2024-01-07">2024-01-07</time></span></div><div class="content">For example，ZADD is a command that add member with score to sorted set, and it can accept NX or XX as option.
+1 2 ZADD key [NX | XX] [GT | LT] [CH] [INCR] score member [score member ...] XX: Only update elements that already exist. Don&rsquo;t add new elements. NX: Only add new elements. Don&rsquo;t update already existing elements. NX 與 XX 只能選一個，在 go-redis 是用這樣的 structure 來裝 argument, 但這就必須要額外的註解與檢查來告訴使用者 NX, XX 是互斥的。 1 2 3 4 5 6 7 8 type ZAddArgs struct { NX bool XX bool LT bool GT bool Ch bool Members []Z } Ref: go-redis ZAddArgs</div><div class="post-footer">
+        <a href="/type_state_pattern/">Read More</a><div class="post-tags">
+                <i class="fas fa-tags fa-fw" aria-hidden="true"></i>&nbsp;<a href="/tags/go/">Go</a>,&nbsp;<a href="/tags/redis/">Redis</a></div></div>
+</article><article class="single summary" itemscope itemtype="http://schema.org/Article"><h1 class="single-title" itemprop="name headline">
         <a href="/nested-json/">Build Nested JSON in PostgreSQL</a>
     </h1><div class="post-meta"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span>&nbsp;<span class="post-publish">published on <time datetime="2023-03-07">2023-03-07</time></span></div><div class="content">Original Stackoverflow thread:
 https://stackoverflow.com/questions/42222968/create-nested-json-from-sql-query-postgres-9-4/42226253#42226253
@@ -126,14 +132,18 @@ The result she generated is totally correct, and can be run in playground.
     </h1><div class="post-meta"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span>&nbsp;<span class="post-publish">published on <time datetime="2023-01-08">2023-01-08</time></span></div><div class="content">Hello, This is my first time trying Hugo! Inline Formula: 1 SELECT &#39;hello-world&#39; FROM me Block Formula:
 Test IFrame </div><div class="post-footer">
         <a href="/my-first-post/">Read More</a></div>
-</article><article class="single summary" itemscope itemtype="http://schema.org/Article"><h1 class="single-title" itemprop="name headline">
-        <a href="/about/">About me</a>
-    </h1><div class="post-meta"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>unknowntpo</a></span>&nbsp;<span class="post-publish">published on <time datetime="2023-01-08">2023-01-08</time></span></div><div class="content">I am unknowntpo, a Backend Software Engineer. </div><div class="post-footer">
-        <a href="/about/">Read More</a></div>
-</article></div></div>
+</article><ul class="pagination"><li class="page-item active">
+                    <span class="page-link">
+                        <a href="/">1</a>
+                    </span>
+                </li><li class="page-item ">
+                    <span class="page-link">
+                        <a href="/page/2/">2</a>
+                    </span>
+                </li></ul></div></div>
             </main><footer class="footer">
         <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.104.3">Hugo</a> | Theme - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.11"><i class="far fa-kiss-wink-heart fa-fw" aria-hidden="true"></i> LoveIt</a>
-                </div><div class="footer-line" itemscope itemtype="http://schema.org/CreativeWork"><i class="far fa-copyright fa-fw" aria-hidden="true"></i><span itemprop="copyrightYear">2019 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/" target="_blank">unknowntpo</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+                </div><div class="footer-line" itemscope itemtype="http://schema.org/CreativeWork"><i class="far fa-copyright fa-fw" aria-hidden="true"></i><span itemprop="copyrightYear">2019 - 2024</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/" target="_blank">unknowntpo</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
         </div>
     </footer></div>
 
