@@ -21,20 +21,4 @@ hugo/publish:
 	hugo --source ./quickstart/
 	cp -r ./quickstart/public/ ./docs
 
-## ---- Docusaurus ----
-
-## dev: start Docusaurus dev server
-dev:
-	cd website && bun start
-
-## build: build Docusaurus site
-build:
-	cd website && bun run build
-
-## publish: build Docusaurus and copy to docs/ for GitHub Pages
-publish:
-	cd website && bun run build
-	rm -rf ./docs/*
-	cp -r ./website/build/* ./docs/
-
-.PHONY: help hugo/new/post hugo/serve/drafts hugo/publish dev build publish
+.PHONY: help hugo/new/post hugo/serve/drafts hugo/publish
