@@ -6,17 +6,35 @@ help:
 	@echo 'Usage:'
 	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' |  sed -e 's/^/ /'
 
-## new/post: create a new post, use POST to specify post name
-new/post:
+## ---- Hugo (legacy) ----
+
+## hugo/new/post: create a new post, use POST to specify post name
+hugo/new/post:
 	cd quickstart && hugo new posts/$(POST).md
 
-## serve/drafts: preview the page in hugo server
-serve/drafts:
+## hugo/serve/drafts: preview the page in hugo server
+hugo/serve/drafts:
 	hugo server --buildDrafts --source ./quickstart/
 
-## publish: copy ./quickstart/public to ./docs to allow github display it
-publish:
+## hugo/publish: copy ./quickstart/public to ./docs to allow github display it
+hugo/publish:
 	hugo --source ./quickstart/
 	cp -r ./quickstart/public/ ./docs
 
-.PHONY: help new/post server/drafts publish
+## ---- Docusaurus ----
+
+## dev: start Docusaurus dev server
+dev:
+	cd website && npm start
+
+## build: build Docusaurus site
+build:
+	cd website && npm run build
+
+## publish: build Docusaurus and copy to docs/ for GitHub Pages
+publish:
+	cd website && npm run build
+	rm -rf ./docs/*
+	cp -r ./website/build/* ./docs/
+
+.PHONY: help hugo/new/post hugo/serve/drafts hugo/publish dev build publish
