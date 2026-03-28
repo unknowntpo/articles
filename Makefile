@@ -25,15 +25,15 @@ hugo/publish:
 
 ## dev: start Docusaurus dev server
 dev:
-	cd website && npm start
+	cd website && bun start
 
 ## build: build Docusaurus site
 build:
-	cd website && npm run build
+	cd website && bun run build
 
 ## publish: build Docusaurus and copy to docs/ for GitHub Pages
 publish:
-	cd website && npm run build
+	cd website && bun run build
 	rm -rf ./docs/*
 	cp -r ./website/build/* ./docs/
 
