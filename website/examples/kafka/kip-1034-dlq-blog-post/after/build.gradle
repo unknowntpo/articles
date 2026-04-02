@@ -1,0 +1,11 @@
+dependencies {
+    implementation 'org.apache.kafka:kafka-streams:4.2.0'
+    implementation 'org.apache.kafka:kafka-clients:4.2.0'
+    testImplementation 'org.apache.kafka:kafka-streams-test-utils:4.2.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+application {
+    mainClass = 'io.example.App'
+}
