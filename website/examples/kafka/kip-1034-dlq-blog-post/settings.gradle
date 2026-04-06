@@ -1,4 +1,0 @@
-rootProject.name = 'kafka-dlq-demo'
-
-include 'before'
-include 'after'
