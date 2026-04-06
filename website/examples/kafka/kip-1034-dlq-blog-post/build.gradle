@@ -1,0 +1,29 @@
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'application'
+
+    group = 'io.example'
+    version = '1.0-SNAPSHOT'
+
+    repositories {
+        mavenCentral()
+    }
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    dependencies {
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.0'
+        implementation 'org.slf4j:slf4j-simple:2.0.12'
+    }
+
+    run {
+        standardInput = System.in
+    }
+
+    test {
+        useJUnitPlatform()
+    }
+}
