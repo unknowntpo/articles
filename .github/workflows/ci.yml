@@ -21,7 +21,7 @@ jobs:
           bun-version: 1.0.23
 
       - name: Install website dependencies
-        run: bun install --frozen-lockfile
+        run: bun install
 
       - name: Build website
         run: bun run build
