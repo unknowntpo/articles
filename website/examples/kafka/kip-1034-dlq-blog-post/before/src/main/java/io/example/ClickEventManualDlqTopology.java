@@ -1,7 +1,6 @@
 package io.example;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -35,11 +34,11 @@ public class ClickEventManualDlqTopology {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private final KafkaProducer<String, String> dlqProducer;
+    private final DlqSender dlqSender;
     private final String dlqTopic;
 
-    public ClickEventManualDlqTopology(KafkaProducer<String, String> dlqProducer, String dlqTopic) {
-        this.dlqProducer = dlqProducer;
+    public ClickEventManualDlqTopology(DlqSender dlqSender, String dlqTopic) {
+        this.dlqSender = dlqSender;
         this.dlqTopic = dlqTopic;
     }
 
@@ -82,7 +81,7 @@ public class ClickEventManualDlqTopology {
                 ? cause.getMessage().getBytes() : "null".getBytes());
         dlqRecord.headers().add("error.class", cause.getClass().getName().getBytes());
         try {
-            dlqProducer.send(dlqRecord).get(); // synchronous to highlight ordering concern
+            dlqSender.send(dlqRecord);
             System.out.println("[ManualDlq] Sent to DLQ (NOT tx-safe): key=" + key);
         } catch (Exception ex) {
             System.err.println("[ManualDlq] Failed to send to DLQ: " + ex.getMessage());

@@ -148,7 +148,8 @@ public class App {
         dlqProducerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         KafkaProducer<String, String> dlqProducer = new KafkaProducer<>(dlqProducerProps);
 
-        ClickEventManualDlqTopology topology = new ClickEventManualDlqTopology(dlqProducer, DLQ_TOPIC);
+        ClickEventManualDlqTopology topology =
+                new ClickEventManualDlqTopology(record -> dlqProducer.send(record).get(), DLQ_TOPIC);
         return new KafkaStreams(topology.build(INPUT_TOPIC, OUTPUT_TOPIC), streamsProps);
     }
 }
