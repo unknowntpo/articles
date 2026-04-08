@@ -101,6 +101,16 @@ dlqProducer.send(dlqRecord).get();
 
 這種情況下，你在 topology 裡做任何分流都沒用。`flatMap` 幫不上忙，`split()` 幫不上忙，`branch()` 也幫不上忙。你唯一能掛的點，是 `DeserializationExceptionHandler`。
 
+:::info Kafka Streams 原始碼中的對應位置
+`RecordQueue.addRawRecords()` 先把 raw records 放進 queue，接著 `updateHead()` 會呼叫 `recordDeserializer.deserialize(processorContext, raw)`；之後 `StreamTask.process()` 才從 `partitionGroup.nextRecord(...)` 取出 record，交給 `doProcess()` 傳進 source node。也就是說，deserialization 確實發生在 record 進入 topology 之前。
+
+參考：
+- [RecordQueue.addRawRecords()](https://github.com/apache/kafka/blob/trunk/streams/src/main/java/org/apache/kafka/streams/processor/internals/RecordQueue.java#L976-L985)
+- [RecordQueue.updateHead()](https://github.com/apache/kafka/blob/trunk/streams/src/main/java/org/apache/kafka/streams/processor/internals/RecordQueue.java#L1114-L1126)
+- [StreamTask.process()](https://github.com/apache/kafka/blob/trunk/streams/src/main/java/org/apache/kafka/streams/processor/internals/StreamTask.java#L3497-L3533)
+- [StreamTask.doProcess()](https://github.com/apache/kafka/blob/trunk/streams/src/main/java/org/apache/kafka/streams/processor/internals/StreamTask.java#L3654-L3694)
+:::
+
 `ManualDlqHandler.java` 示範的就是這條路：
 
 ```java
