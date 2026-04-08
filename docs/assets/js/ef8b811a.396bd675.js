@@ -1,0 +1,1 @@
+"use strict";(globalThis.webpackChunkwebsite=globalThis.webpackChunkwebsite||[]).push([[947],{6600(t){t.exports=JSON.parse('{"authors":[{"name":"unknowntpo","url":"https://github.com/unknowntpo","imageURL":"https://avatars.githubusercontent.com/u/10594519?v=4","key":"unknowntpo","page":null,"count":7}]}')}}]);
