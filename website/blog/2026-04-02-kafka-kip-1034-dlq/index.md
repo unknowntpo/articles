@@ -58,6 +58,10 @@ click-events -> deserialize X -> process -> output
 
 如果錯誤是出現在 topology 內部，你還有很多地方可以攔。最直覺的做法就是在 operator 裡自己 `try/catch`。
 
+:::info 為什麼這裡用 `flatMap`？
+這裡刻意用 `flatMap`，是因為這個範例的需求很適合「成功輸出 1 筆，失敗輸出 0 筆」這種型態。成功時我們回傳處理後的結果；失敗時資料改送 DLQ，主流程就不再往下送任何 record。像 `map` 或 `mapValues` 這類 operator，比較適合一進一出；如果硬要用，通常還得再額外約定 `null` 或其他 sentinel value，反而把例子搞複雜。
+:::
+
 這段是 `ClickEventManualDlqTopology.java` 的核心：
 
 ```java
