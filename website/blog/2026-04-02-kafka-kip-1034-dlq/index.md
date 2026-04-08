@@ -336,7 +336,7 @@ assertTrue(headerNames.contains("__streams.errors.partition"));
 assertTrue(headerNames.contains("__streams.errors.offset"));
 ```
 
-這個細節很重要，因為實務上 DLQ 不是只是拿來「丟垃圾」而已。你後面通常還要查原因、做告警、回補資料，甚至把壞資料拿去做 replay。這些 metadata 如果框架能穩定幫你補，後面的處理會省事很多。
+這個細節之所以重要，是因為 DLQ 並不只是承接錯誤資料而已。實務上，後續往往還牽涉到原因追查、告警、資料回補，甚至 replay。若這些 metadata 能由框架穩定補齊，後續處理就會省事許多。
 
 ## 到這裡，可以先把差異收一下
 
