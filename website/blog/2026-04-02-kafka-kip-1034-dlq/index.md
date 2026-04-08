@@ -5,7 +5,7 @@ authors: [unknowntpo]
 tags: [Kafka, Kafka Streams, DLQ]
 ---
 
-本篇搭配的範例程式已一併放進這個 repo：`examples/kafka/kip-1034-dlq-blog-post/`。
+本篇搭配的範例程式已一併放進這個 repo：[`examples/kafka/kip-1034-dlq-blog-post/`](https://github.com/unknowntpo/articles/tree/master/website/examples/kafka/kip-1034-dlq-blog-post)。
 
 `before/` 對應 Kafka 4.2.0 以前常見的手動 DLQ 作法，`after/` 對應 Kafka 4.2.0 / KIP-1034 的內建 DLQ 作法。
 
