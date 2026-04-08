@@ -91,7 +91,7 @@ dlqRecord.headers().add("error.class", cause.getClass().getName().getBytes());
 dlqProducer.send(dlqRecord).get();
 ```
 
-問題是，這個 `dlqProducer` 跟 Kafka Streams 內部那個 producer 是兩回事。你現在只是「在 topology 裡面另外開一把槍」，不是讓 Streams 幫你送。當需求只停在「有送出去就好」時，很多團隊做到這裡就收工了。但如果你有開 EOS，這種寫法就開始有風險。
+問題是，這個 `dlqProducer` 跟 Kafka Streams 內部那個 producer 是兩回事。這代表你得自己多維護一個 producer，而不是讓 Streams 用內部機制幫你送。更重要的是，這個做法無法納入 Kafka Streams 的同一個 transaction，因此也沒辦法讓 DLQ 這條寫入路徑和主流程一起達成 EOS。
 
 ### 路線二：deserialization error 發生在 topology 之前
 
