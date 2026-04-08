@@ -13,7 +13,7 @@ tags: [Kafka, Kafka Streams, DLQ]
 
 問題是，在 Kafka Streams 4.2.0 以前，這件事沒有你想像中那麼直覺。你可以做，但往往要自己補很多東西，而且一不小心就會踩到 transaction 邊界，特別是你開了 `exactly_once_v2` 之後，事情會更麻煩。
 
-Kafka 4.2.0 的 KIP-1034，就是把這一塊補起來。它不是只幫你少寫幾行 code 而已，而是把「送 DLQ」這件事正式拉回 Kafka Streams 自己的 transaction flow 裡面。這篇我想用 repo 裡的範例，從舊作法一路走到新作法，直接看差別到底在哪裡。
+Kafka 4.2.0 的 KIP-1034，就是把這一塊補起來。它帶來的改變不只是少寫幾行 code，而是把「送 DLQ」這件事正式拉回 Kafka Streams 自己的 transaction flow 裡面。這篇我想用 repo 裡的範例，從舊作法一路走到新作法，直接看差別到底在哪裡。
 
 ## 先看問題長什麼樣子
 
@@ -33,7 +33,7 @@ click-events -> deserialize -> process -> click-events-output
 
 如果資料是乾淨的，事情很單純。但只要有一筆像 `NOT_VALID_JSON` 這種壞資料混進來，問題就來了。因為 Kafka Streams 在處理資料之前，得先把 bytes 轉成你要的物件。這一步如果失敗，後面的 processor 根本還沒開始跑。
 
-這也是為什麼 DLQ 在 Kafka Streams 裡，不只是「catch exception 然後送另一個 topic」這麼簡單。你得先分清楚，錯誤是發生在 topology 裡，還是發生在 topology 之前。
+這也是為什麼 DLQ 在 Kafka Streams 裡，不能只想成「catch exception 然後送另一個 topic」。你得先分清楚，錯誤是發生在 topology 裡，還是發生在 topology 之前。
 
 ```text
 case A: processing error
@@ -104,6 +104,8 @@ dlqProducer.send(dlqRecord).get();
 :::info Kafka Streams 原始碼中的對應位置
 `RecordQueue.addRawRecords()` 先把 raw records 放進 queue，接著 `updateHead()` 會呼叫 `recordDeserializer.deserialize(processorContext, raw)`；之後 `StreamTask.process()` 才從 `partitionGroup.nextRecord(...)` 取出 record，交給 `doProcess()` 傳進 source node。也就是說，deserialization 確實發生在 record 進入 topology 之前。
 
+TODO: 這段原始碼 trace 之後要再回頭完整驗一次，特別是 `RecordQueue` / `partitionGroup` / `StreamTask` 之間的呼叫鏈是否還有更適合引用的入口點。
+
 參考：
 - [RecordQueue.addRawRecords()](https://github.com/apache/kafka/blob/trunk/streams/src/main/java/org/apache/kafka/streams/processor/internals/RecordQueue.java#L976-L985)
 - [RecordQueue.updateHead()](https://github.com/apache/kafka/blob/trunk/streams/src/main/java/org/apache/kafka/streams/processor/internals/RecordQueue.java#L1114-L1126)
@@ -138,7 +140,7 @@ dlqRecord.headers().add("__manual.error.offset",
         String.valueOf(record.offset()).getBytes());
 ```
 
-這就是舊版最麻煩的地方：不只是「麻煩寫」，而是不同錯誤階段還要用不同招式補洞。
+這就是舊版最麻煩的地方：每種錯誤都得自己找對應的處理位置，處理方式還不一樣。
 
 把 `before/` 這兩條路放在一起看，痛點其實很明確，而且每一個都很實務：
 
@@ -148,9 +150,9 @@ dlqRecord.headers().add("__manual.error.offset",
 - 你得自己承擔 tx-safe 的風險，尤其在 EOS 打開時，DLQ 重複寫入不是理論問題，而是真的可能在 retry 時出現。
 - 你得自己測，連測試都會被迫圍繞 workaround 來寫，而不是直接驗證框架行為。
 
-換句話說，舊版的問題不是「程式有點醜」。而是你為了補一個框架沒內建的能力，最後會把錯誤處理、資料一致性、甚至 observability 的責任一起扛到 application 層。
+換句話說，舊版麻煩的不是程式碼多幾行，而是你為了補一個框架沒內建的能力，最後會把錯誤處理、資料一致性、甚至 observability 的責任一起扛到 application 層。
 
-## 真正的痛點不是 code 醜，而是不 tx-safe
+## 真正的痛點在 tx-safe
 
 很多人第一次看這題，會以為重點只是程式碼比較囉唆。其實不是。真正麻煩的是 transaction 邊界。
 
@@ -195,7 +197,7 @@ process error / handler
 3. Streams retry 之後，又重新處理同一筆資料。
 4. 你的 DLQ 又被送一次。
 
-於是你得到的不是「可靠的錯誤收容」，而是「可能重複寫入的錯誤收容」。
+結果就是，這條 DLQ 寫入路徑看起來能用，但其實可能在 retry 時重複寫入。
 
 這一點在 `before/` 裡其實寫得很清楚。無論是 `ClickEventManualDlqTopology.java` 還是 `ManualDlqHandler.java`，class comment 都在強調同一件事：只要是獨立 producer，就不在 Streams 的 transaction 內，abort 之後沒辦法跟著 rollback。
 
@@ -215,7 +217,7 @@ Streams                 Manual DLQ Producer             Kafka
    |                           |----------------------->|
 ```
 
-所以舊版真正卡住的點，不是少一個 helper method，而是框架本身沒有給你一條正式、內建、可 tx-safe 的 DLQ 路。
+所以舊版真正卡住的點，是框架本身沒有給你一條正式、內建、可 tx-safe 的 DLQ 路。
 
 ## Kafka 4.2.0 / KIP-1034：框架終於把這條路補起來
 
@@ -257,7 +259,7 @@ props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
 4. Kafka Streams 透過 `RecordCollectorImpl` 用同一個 `StreamsProducer` 把 record 送出去。
 5. 因為走的是同一個 producer，所以它也落在同一個 transaction 裡。
 
-這就是 KIP-1034 最重要的差別。它不是只幫你省掉自己建 `ProducerRecord` 的麻煩，而是把 DLQ 重新納入 Kafka Streams 的一致性模型裡。
+這就是 KIP-1034 最重要的差別。它不只是幫你省掉自己建 `ProducerRecord` 的麻煩，也把 DLQ 重新納入 Kafka Streams 的一致性模型裡。
 
 如果把 `after` 帶來的方便功能拆開看，大概可以整理成這幾件事：
 
@@ -402,11 +404,11 @@ cd examples/kafka/kip-1034-dlq-blog-post
 
 ## 結語
 
-KIP-1034 這個功能我覺得很實用，原因不是它多炫，而是它剛好補在一個很常痛、又很難自己補漂亮的地方。
+KIP-1034 這個功能我覺得很實用，因為它剛好補在一個很常痛、又很難自己補漂亮的地方。
 
-在 Kafka 4.2.0 以前，你不是不能做 DLQ，而是你得自己處理很多框架本來不知道的事：錯誤發生在哪一層、怎麼送出去、headers 怎麼補、transaction 怎麼對齊。只要其中一塊沒顧好，整套方案就容易長成半套。
+在 Kafka 4.2.0 以前，DLQ 不是做不到，但你得自己處理很多框架本來不知道的事：錯誤發生在哪一層、怎麼送出去、headers 怎麼補、transaction 怎麼對齊。只要其中一塊沒顧好，整套方案就容易長成半套。
 
-到了 Kafka 4.2.0，事情終於簡單很多。你把 `StreamsConfig.ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG` 設好，搭配 `LogAndContinueExceptionHandler`，就能讓 DLQ 走進 Kafka Streams 自己的處理流程。這不是語法糖，而是把原本散落在 application 層的責任，收回到 framework 裡。
+到了 Kafka 4.2.0，事情終於簡單很多。你把 `StreamsConfig.ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG` 設好，搭配 `LogAndContinueExceptionHandler`，就能讓 DLQ 走進 Kafka Streams 自己的處理流程。這也不只是語法糖，原本散落在 application 層的責任，現在終於回到 framework 裡。
 
 如果你現在正好有 Kafka Streams 應用卡在手動錯誤處理，這一版很值得看一下。
 
