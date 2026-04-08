@@ -60,7 +60,7 @@ class ClickEventTopologyTest {
     }
 
     @Test
-    void validRecordGoesToOutput() {
+    void testValidRecordGoesToOutput() {
         inputTopic.pipeInput("user-1", "{\"ad_id\":\"banner-A\",\"count\":3}");
 
         List<KeyValue<String, String>> records = outputTopic.readKeyValuesToList();
@@ -70,7 +70,7 @@ class ClickEventTopologyTest {
     }
 
     @Test
-    void invalidRecordGoesToDlq() {
+    void testInvalidRecordGoesToDlq() {
         inputTopic.pipeInput("user-bad", "NOT_VALID_JSON");
 
         assertTrue(outputTopic.isEmpty());
@@ -78,7 +78,7 @@ class ClickEventTopologyTest {
     }
 
     @Test
-    void dlqRecordHasStreamsErrorHeaders() {
+    void testDlqRecordHasStreamsErrorHeaders() {
         inputTopic.pipeInput("user-bad", "NOT_VALID_JSON");
 
         TestRecord<byte[], byte[]> dlqRecord = dlqTopic.readRecord();
@@ -100,7 +100,7 @@ class ClickEventTopologyTest {
     }
 
     @Test
-    void mixedRecordsCorrectRouting() {
+    void testMixedRecordsCorrectRouting() {
         inputTopic.pipeInput("user-1",    "{\"ad_id\":\"banner-A\",\"count\":3}");
         inputTopic.pipeInput("user-2",    "{\"ad_id\":\"video-B\",\"count\":1}");
         inputTopic.pipeInput("user-3",    "{\"ad_id\":\"sidebar-C\",\"count\":7}");
