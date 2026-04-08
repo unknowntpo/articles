@@ -154,7 +154,7 @@ dlqRecord.headers().add("__manual.error.offset",
 
 ## 真正的痛點在 tx-safe
 
-很多人第一次看這題，會以為重點只是程式碼比較囉唆。其實不是。真正麻煩的是 transaction 邊界。
+前面在談 deserialization error 那一段，其實只回答了一半的問題：為什麼這類錯誤不能靠 `flatMap`、`branch()`、`split()` 這些 topology 內的手段處理。接下來真正麻煩的，是就算你接受「只能自己送 DLQ」這件事，transaction 邊界的問題還是沒解決。
 
 Kafka Streams 在 EOS 模式下，自己會管理 transaction。簡化來看，它的處理流程大概是這樣：
 
@@ -269,7 +269,7 @@ props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
 - 你不用再為 deserialization error 另外發明一套 workaround，框架已經有正式路徑可以處理。
 - 你比較容易把 DLQ 跟 `exactly_once_v2` 放在一起思考，因為現在它終於回到同一個 transaction 模型裡。
 
-對日常維運來說，這些改變的價值很直接：設定比較少、拓樸比較乾淨、錯誤資訊比較完整、測試比較好寫，最重要的是整體行為比較能預期。
+對日常維運來說，這些改變的價值很直接：設定比較少、拓樸比較乾淨、錯誤資訊比較完整、測試比較好寫，更重要的是，DLQ 不再是 transaction 外的額外寫入，整體行為也比較能和 Kafka Streams 的 EOS 模型對齊。
 
 `after` 的資料流則比較像這樣：
 
