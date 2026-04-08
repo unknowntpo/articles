@@ -338,7 +338,7 @@ assertTrue(headerNames.contains("__streams.errors.offset"));
 
 這個細節很重要，因為實務上 DLQ 不是只是拿來「丟垃圾」而已。你後面通常還要查原因、做告警、回補資料，甚至把壞資料拿去做 replay。這些 metadata 如果框架能穩定幫你補，後面的處理會省事很多。
 
-## Before / After 直接比一次
+## 到這裡，可以先把差異收一下
 
 | 項目 | Kafka 4.2.0 以前的手動作法 | Kafka 4.2.0 / KIP-1034 |
 | --- | --- | --- |
@@ -349,7 +349,7 @@ assertTrue(headerNames.contains("__streams.errors.offset"));
 | Error headers | 要自己補、自己命名、自己維護 | 框架自動附上 `__streams.errors.*` |
 | 程式碼量 | topology、handler、headers、producer lifecycle 都要自己顧 | 一行 config 就能啟用主流程 |
 
-如果你只看表面，會覺得差別是「少寫很多 code」。但從系統設計角度看，更準確的說法是：舊版是 application 自己硬補，4.2.0 才是 framework 正式承認 DLQ 是 Streams 的一級能力。
+如果把前面講的內容濃縮成一句話，Kafka 4.2.0 以前的 DLQ 比較像 application 自己補出來的機制；到了 KIP-1034 之後，DLQ 才真正變成 Kafka Streams 內建、而且能和 transaction 模型一起運作的能力。
 
 ## 用測試看行為差異，比講概念更準
 
@@ -393,7 +393,7 @@ cd examples/kafka/kip-1034-dlq-blog-post
 
 ## 什麼時候你會真的想升到 4.2.0？
 
-如果你的場景只是 demo，或資料真的很乾淨，舊版手動 DLQ 不是完全不能用。但只要你有下面幾種需求，KIP-1034 的價值就會很明顯：
+如果你有下面幾種需求，KIP-1034 的價值就會很明顯：
 
 - 你希望 deserialization error 也能穩定進 DLQ。
 - 你不想在 topology 外再養一把 producer。
