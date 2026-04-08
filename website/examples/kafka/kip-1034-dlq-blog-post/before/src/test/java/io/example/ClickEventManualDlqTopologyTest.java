@@ -34,6 +34,8 @@ class ClickEventManualDlqTopologyTest {
 
     @BeforeEach
     void setUp() {
+        // Use a real in-memory sender plus spy so the test checks sent records directly
+        // without coupling itself to KafkaProducer.send()/Future mocking details.
         dlqSender = spy(new RecordingDlqSender());
 
         ClickEventManualDlqTopology topology =
