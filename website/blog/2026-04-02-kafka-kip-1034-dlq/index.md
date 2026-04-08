@@ -125,7 +125,7 @@ public DeserializationHandlerResponse handle(
 }
 ```
 
-這邊的尷尬點更直接。因為你已經不在 topology 裡了，所以沒有 `context.forward()` 可以用，也沒有什麼內建機制能讓你把一筆 DLQ record 回交給 Kafka Streams。要送出去，還是只能自己建一個獨立的 `KafkaProducer`。
+這邊的限制其實很直接：deserialization error 發生時，record 還沒進入 topology，所以你不能用 topology 內的 routing 手段來處理它。`context.forward()` 用不上，`branch()`、`split()`、`flatMap` 這些 operator 也完全碰不到這筆資料。結果就是，如果你想把它送進 DLQ，通常只能自己建一個獨立的 `KafkaProducer`。
 
 而且不只要自己送，你還得自己複製原始 headers、自己補 topic / partition / offset / exception 這些 metadata：
 
