@@ -7,7 +7,7 @@ tags: [Kafka, Kafka Streams, DLQ]
 
 本篇搭配的範例程式已一併放進這個 repo：`examples/kafka/kip-1034-dlq-blog-post/`。
 
-`before/` 對應 Kafka 3.9.x 的手動 DLQ 作法，`after/` 對應 Kafka 4.2.0 / KIP-1034 的內建 DLQ 作法。
+`before/` 對應 Kafka 4.2.0 以前常見的手動 DLQ 作法，`after/` 對應 Kafka 4.2.0 / KIP-1034 的內建 DLQ 作法。
 
 如果你平常有在跑 Kafka Streams，應該多少都遇過這種情況：正常資料一路順順地進來，直到某一筆髒資料出現，整個 flow 就開始變得很尷尬。你當然可以選擇直接 fail，讓程式停掉；也可以選擇 continue，把壞資料跳過。但實務上通常還有第三個需求，就是把那筆壞資料留下來，丟到另一個 topic，之後再補救、重送，或至少做告警。這就是 DLQ（Dead Letter Queue）存在的理由。
 
@@ -50,9 +50,9 @@ click-events -> deserialize X -> process -> output
                   +-> processor 還沒開始
 ```
 
-## Kafka 3.9.x：手動做 DLQ，得分成兩種錯誤處理
+## Kafka 4.2.0 以前：手動做 DLQ，得分成兩種錯誤處理
 
-先看 `before/` 裡的做法。這一版刻意把舊世界的兩種常見路線都保留下來，因為它們各有各的限制。
+先講 Kafka 4.2.0 以前，實務上常見的手動 DLQ 作法。這類做法大致會分成兩條路，repo 裡的 `before/` 只是把它們整理成可重現的範例，方便對照它們各自的限制。
 
 ### 路線一：processing error 發生在 topology 裡
 
@@ -324,7 +324,7 @@ assertTrue(headerNames.contains("__streams.errors.offset"));
 
 ## Before / After 直接比一次
 
-| 項目 | Kafka 3.9.x 手動作法 | Kafka 4.2.0 / KIP-1034 |
+| 項目 | Kafka 4.2.0 以前的手動作法 | Kafka 4.2.0 / KIP-1034 |
 | --- | --- | --- |
 | Processing error | 可以自己攔，但通常得自己把錯誤導去 DLQ | 可延續框架內建處理方式 |
 | Deserialization error | 只能掛 `DeserializationExceptionHandler`，而且只能自己送 | 可直接透過內建 DLQ flow 處理 |
@@ -390,7 +390,7 @@ cd examples/kafka/kip-1034-dlq-blog-post
 
 KIP-1034 這個功能我覺得很實用，原因不是它多炫，而是它剛好補在一個很常痛、又很難自己補漂亮的地方。
 
-在 Kafka 3.9.x，你不是不能做 DLQ，而是你得自己處理很多框架本來不知道的事：錯誤發生在哪一層、怎麼送出去、headers 怎麼補、transaction 怎麼對齊。只要其中一塊沒顧好，整套方案就容易長成半套。
+在 Kafka 4.2.0 以前，你不是不能做 DLQ，而是你得自己處理很多框架本來不知道的事：錯誤發生在哪一層、怎麼送出去、headers 怎麼補、transaction 怎麼對齊。只要其中一塊沒顧好，整套方案就容易長成半套。
 
 到了 Kafka 4.2.0，事情終於簡單很多。你把 `StreamsConfig.ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG` 設好，搭配 `LogAndContinueExceptionHandler`，就能讓 DLQ 走進 Kafka Streams 自己的處理流程。這不是語法糖，而是把原本散落在 application 層的責任，收回到 framework 裡。
 
