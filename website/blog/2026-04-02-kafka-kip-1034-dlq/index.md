@@ -50,9 +50,9 @@ click-events -> deserialize X -> process -> output
                   +-> processor 還沒開始
 ```
 
-## Kafka 4.2.0 以前：手動做 DLQ，得分成兩種錯誤處理
+## Kafka 4.2.0 以前：兩種 exception，兩套處理方式
 
-先講 Kafka 4.2.0 以前，實務上常見的手動 DLQ 作法。這類做法大致會分成兩條路，repo 裡的 `before/` 只是把它們整理成可重現的範例，方便對照它們各自的限制。
+先講 Kafka 4.2.0 以前常見的手動 DLQ 作法。麻煩的地方在於，你不是只要接一種錯誤就好，而是得分別處理兩種不同型態的 exception。repo 裡的 `before/` 只是把這兩種情況整理成可重現的範例，方便對照它們各自的限制。
 
 ### 路線一：processing error 發生在 topology 裡
 
@@ -99,9 +99,9 @@ dlqProducer.send(dlqRecord).get();
 
 更麻煩的是 deserialization error。
 
-這種錯誤不是發生在 `map`、`flatMap`、`transform` 那些步驟裡，而是在 record 被 consumer 撈回來之後、真正進入 topology 之前就發生了。換句話說，processor 還沒拿到資料，你就已經炸掉了。
+這種錯誤不是發生在 `map`、`flatMap`、`transform` 那些步驟裡，而是在 record 被 consumer 撈回來之後、真正進入 topology 之前就發生了。換句話說，processor 還沒真正接手這筆資料，deserialization 就已經失敗了。
 
-這種情況下，你在 topology 裡做任何分流都沒用。`flatMap` 幫不上忙，`split()` 幫不上忙，`branch()` 也幫不上忙。你唯一能掛的點，是 `DeserializationExceptionHandler`。
+這種情況下，你在 topology 裡做任何分流都沒用。`flatMap` 幫不上忙，`split()` 幫不上忙，`branch()` 也幫不上忙。可用的處理入口只剩 `DeserializationExceptionHandler`。
 
 :::info Kafka Streams 原始碼中的對應位置
 `RecordQueue.addRawRecords()` 先把 raw records 放進 queue，接著 `updateHead()` 會呼叫 `recordDeserializer.deserialize(processorContext, raw)`；之後 `StreamTask.process()` 才從 `partitionGroup.nextRecord(...)` 取出 record，交給 `doProcess()` 傳進 source node。也就是說，deserialization 確實發生在 record 進入 topology 之前。
