@@ -44,19 +44,30 @@ public class ManualDlqHandler implements DeserializationExceptionHandler {
     private static final String DLQ_TOPIC_CONFIG_KEY = "dlq.topic.name";
     private static final String BOOTSTRAP_SERVERS_KEY = "bootstrap.servers";
 
+    private final RawDlqSender injectedSender;
     private KafkaProducer<byte[], byte[]> dlqProducer;
     private String dlqTopic;
+
+    public ManualDlqHandler() {
+        this(null);
+    }
+
+    ManualDlqHandler(RawDlqSender injectedSender) {
+        this.injectedSender = injectedSender;
+    }
 
     @Override
     public void configure(Map<String, ?> configs) {
         this.dlqTopic = (String) configs.get(DLQ_TOPIC_CONFIG_KEY);
 
-        Map<String, Object> producerProps = new HashMap<>();
-        producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, configs.get(BOOTSTRAP_SERVERS_KEY));
-        producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
-        producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
-        // NOTE: we cannot use transactional.id here because we don't have access to Streams' tx
-        this.dlqProducer = new KafkaProducer<>(producerProps);
+        if (injectedSender == null) {
+            Map<String, Object> producerProps = new HashMap<>();
+            producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, configs.get(BOOTSTRAP_SERVERS_KEY));
+            producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
+            producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
+            // NOTE: we cannot use transactional.id here because we don't have access to Streams' tx
+            this.dlqProducer = new KafkaProducer<>(producerProps);
+        }
 
         System.out.println("[ManualDlqHandler] Configured with dlqTopic=" + dlqTopic);
     }
@@ -103,7 +114,11 @@ public class ManualDlqHandler implements DeserializationExceptionHandler {
                 cause.getClass().getName().getBytes());
 
         try {
-            dlqProducer.send(dlqRecord).get();
+            if (injectedSender != null) {
+                injectedSender.send(dlqRecord);
+            } else {
+                dlqProducer.send(dlqRecord).get();
+            }
             System.out.printf("[ManualDlqHandler] Sent to DLQ (NOT tx-safe): topic=%s offset=%d%n",
                     record.topic(), record.offset());
         } catch (Exception e) {

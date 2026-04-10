@@ -2,9 +2,11 @@ package io.example;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 
 import java.util.Collections;
@@ -18,7 +20,7 @@ import java.util.Collections;
  *   <li>If Streams aborts after dlqProducer.send(), the DLQ record is already committed
  *       → duplicate DLQ writes on retry.</li>
  *   <li>No automatic error-metadata headers on DLQ records; we must add them manually.</li>
- *   <li>For Deserialization errors this approach does not even apply — see ManualDlqHandler.</li>
+ *   <li>Deserialization errors must be handled separately via ManualDlqHandler.</li>
  * </ol>
  *
  * <p>Context.forward() alternative (Step 2 — tx-safe for processing errors only):
@@ -45,18 +47,21 @@ public class ClickEventManualDlqTopology {
     public Topology build(String inputTopic, String outputTopic) {
         StreamsBuilder builder = new StreamsBuilder();
 
-        KStream<String, String> stream = builder.stream(inputTopic);
+        KStream<String, ClickEvent> stream =
+                builder.stream(inputTopic, Consumed.with(Serdes.String(), new ClickEventSerde()));
 
-        // flatMap: try to parse JSON; on failure, manually send to DLQ (NOT tx-safe)
+        // flatMap: business validation fails after deserialize succeeds -> manual DLQ (NOT tx-safe)
         stream
-            .flatMap((key, value) -> {
+            .flatMap((key, event) -> {
                 try {
-                    ClickEvent event = MAPPER.readValue(value, ClickEvent.class);
+                    if (event.count < 0) {
+                        throw new IllegalArgumentException("count must be non-negative");
+                    }
                     String processed = "user=" + key + " clicked ad=" + event.adId + " count=" + event.count;
                     return Collections.singletonList(KeyValue.pair(key, processed));
                 } catch (Exception e) {
-                    System.err.println("[ManualDlq] Parse error for key=" + key + ": " + e.getMessage());
-                    sendToDlq(key, value, e);
+                    System.err.println("[ManualDlq] Processing error for key=" + key + ": " + e.getMessage());
+                    sendToDlq(key, event, e);
                     return Collections.emptyList();
                 }
             })
@@ -74,8 +79,15 @@ public class ClickEventManualDlqTopology {
      * Making this tx-safe would require sharing Streams' internal StreamsProducer,
      * which is private API — effectively impossible without forking Kafka.
      */
-    private void sendToDlq(String key, String value, Exception cause) {
-        ProducerRecord<String, String> dlqRecord = new ProducerRecord<>(dlqTopic, key, value);
+    private void sendToDlq(String key, ClickEvent value, Exception cause) {
+        String payload;
+        try {
+            payload = MAPPER.writeValueAsString(value);
+        } catch (Exception e) {
+            payload = String.valueOf(value);
+        }
+
+        ProducerRecord<String, String> dlqRecord = new ProducerRecord<>(dlqTopic, key, payload);
         // Add error metadata headers manually (in 4.2.0 these are added automatically)
         dlqRecord.headers().add("error.message", cause.getMessage() != null
                 ? cause.getMessage().getBytes() : "null".getBytes());

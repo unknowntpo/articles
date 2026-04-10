@@ -6,11 +6,9 @@ import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
-import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,9 +25,9 @@ import java.util.concurrent.ExecutionException;
  * <p>Startup sequence:
  * <ol>
  *   <li>Admin client deletes existing topics and recreates them (clean slate).</li>
- *   <li>Producer sends a mix of valid and malformed JSON records.</li>
- *   <li>Kafka Streams processes records; bad ones go to DLQ via ClickEventManualDlqTopology
- *       (standalone producer — NOT tx-safe) or ManualDlqHandler (deserialization error path).</li>
+ *   <li>Producer sends a mix of valid, malformed, and business-invalid JSON records.</li>
+ *   <li>Kafka Streams routes deserialization errors via ManualDlqHandler and
+ *       processing errors via ClickEventManualDlqTopology (both manual DLQ paths are NOT tx-safe).</li>
  * </ol>
  *
  * <p>Verify DLQ after run:
@@ -112,11 +110,13 @@ public class App {
                     // valid records
                     new String[]{"user-1", "{\"ad_id\":\"banner-A\",\"count\":3}"},
                     new String[]{"user-2", "{\"ad_id\":\"video-B\",\"count\":1}"},
-                    // malformed JSON — will fail in flatMap → goes to DLQ
+                    // malformed JSON — ClickEventSerde fails before topology -> ManualDlqHandler
                     new String[]{"user-3", "NOT_VALID_JSON"},
                     new String[]{"user-4", "{broken json"},
+                    // valid JSON but invalid business input — topology catches and routes to DLQ
+                    new String[]{"user-5", "{\"ad_id\":\"sidebar-C\",\"count\":-7}"},
                     // another valid record
-                    new String[]{"user-5", "{\"ad_id\":\"sidebar-C\",\"count\":7}"}
+                    new String[]{"user-6", "{\"ad_id\":\"sidebar-D\",\"count\":7}"}
             );
 
             for (String[] msg : messages) {
@@ -133,13 +133,12 @@ public class App {
         Properties streamsProps = new Properties();
         streamsProps.put(StreamsConfig.APPLICATION_ID_CONFIG,  APP_ID);
         streamsProps.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
-        streamsProps.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG,   Serdes.String().getClass());
-        streamsProps.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
-        // Without ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG (not available in 3.9.x),
-        // the built-in LogAndContinueExceptionHandler just logs and skips — no DLQ.
-        // We route to DLQ manually inside ClickEventManualDlqTopology.
+        streamsProps.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG,
+                org.apache.kafka.common.serialization.Serdes.String().getClass());
+        // In 3.9.x deserialization errors still require a manual handler to publish DLQ records.
         streamsProps.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
-                LogAndContinueExceptionHandler.class);
+                ManualDlqHandler.class);
+        streamsProps.put("dlq.topic.name", DLQ_TOPIC);
 
         // Stand-alone DLQ producer used by ClickEventManualDlqTopology (NOT tx-safe)
         Map<String, Object> dlqProducerProps = new HashMap<>();

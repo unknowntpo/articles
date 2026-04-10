@@ -56,10 +56,10 @@ click-events -> deserialize X -> process -> output
 
 ### 路線一：processing error 發生在 topology 裡
 
-如果錯誤是出現在 topology 內部，你還有很多地方可以攔。最直覺的做法，就是在 `flatMap` 這類 DSL 轉換裡自己 `try/catch`。
+如果錯誤是出現在 topology 內部，你還有很多地方可以攔。這裡示範的做法，是先讓資料正常完成 deserialization，接著在 `flatMap` 這類 DSL 轉換裡處理後續的 business rule，並在需要時自己 `try/catch`。
 
 :::info 為什麼這裡用 `flatMap`？
-這個 before 範例要表達的是手動 DLQ 的處理方式：成功的資料繼續往下送，失敗的資料改送 DLQ，主流程不再產生 output。對這種「成功 1 筆、失敗 0 筆」的 flow 來說，`flatMap` 會比 `mapValues` 自然很多。
+這個 before 範例要表達的是手動 DLQ 的處理方式：資料先正常完成 deserialization，成功的資料繼續往下送；若後面的 business rule 失敗，資料就改送 DLQ，主流程不再產生 output。對這種「成功 1 筆、失敗 0 筆」的 flow 來說，`flatMap` 會比 `mapValues` 自然很多。
 
 你也可以順便和後面的 `after` 範例對照看。到了 KIP-1034 之後，DLQ 交回 Kafka Streams 內部處理，主流程只剩正常資料轉換，所以 `ClickEventTopology.java` 裡就可以直接用 `mapValues`。若在這個 before 範例裡直接丟 exception，當然也可以，但那就不會是這裡想示範的手動攔截與分流路徑。
 :::
@@ -68,20 +68,22 @@ click-events -> deserialize X -> process -> output
 
 ```java
 stream
-    .flatMap((key, value) -> {
+    .flatMap((key, event) -> {
         try {
-            ClickEvent event = MAPPER.readValue(value, ClickEvent.class);
+            if (event.count < 0) {
+                throw new IllegalArgumentException("count must be non-negative");
+            }
             String processed = "user=" + key + " clicked ad=" + event.adId + " count=" + event.count;
             return Collections.singletonList(KeyValue.pair(key, processed));
         } catch (Exception e) {
-            sendToDlq(key, value, e);
+            sendToDlq(key, event, e);
             return Collections.emptyList();
         }
     })
     .to(outputTopic);
 ```
 
-這段 code 要看的重點不在 `flatMap`，而是在 `catch` 裡那個 `sendToDlq()`。舊版最常見的做法，就是自己準備一個獨立的 `KafkaProducer`，遇到壞資料就直接送去 DLQ。
+這段 code 要看的重點不在 `flatMap`，而是在 `catch` 裡那個 `sendToDlq()`。這裡的錯誤已經不是 JSON parse 失敗，而是 record 成功進入 topology 之後，因為 business rule 不合法而被手動導去 DLQ。舊版最常見的做法，就是自己準備一個獨立的 `KafkaProducer`，遇到這類錯誤就直接送去 DLQ。
 
 看起來很合理，因為它真的能動，而且你也可以順手把 error metadata 補上去：
 
@@ -331,17 +333,18 @@ assertTrue(headerNames.contains("__streams.errors.offset"));
 
 ## 用測試看行為差異，比講概念更準
 
-這裡的另一個好處，是你不需要先起 broker 才能理解行為。`before` 跟 `after` 都有用 `TopologyTestDriver` 寫測試，所以很多事情可以直接在單元測試層驗證。
+這裡的另一個好處，是你不需要先起 broker 才能理解行為。`before` 跟 `after` 都有測試，所以很多事情可以直接在單元測試層驗證。
 
 ### `before` 測的是什麼
 
-`ClickEventManualDlqTopologyTest` 主要驗證三件事：
+`before` 現在拆成兩個測試重點：
 
-1. 正常資料會進 output topic。
-2. 壞資料不會進 output，而是呼叫手動的 DLQ producer。
-3. valid / invalid 混在一起時，路由結果是否正確。
+1. `ClickEventManualDlqTopologyTest`
+   驗證 processing error 這條路：正常資料會進 output，business rule 失敗的資料會被手動送進 DLQ。
+2. `ManualDlqHandlerTest`
+   驗證 deserialization error 這條路：壞 JSON 會進到 `ManualDlqHandler`，並由它手動送出 DLQ record。
 
-它用 `@Mock KafkaProducer` 加 `ArgumentCaptor` 去抓那筆手動送出的 DLQ record。這也反映了舊作法的本質：你要驗證 DLQ，就得 mock 你自己額外建出來的 producer。
+這也反映了舊作法的本質：processing error 和 deserialization error 不只處理位置不同，連測試都得分開驗證。
 
 ### `after` 測的是什麼
 
