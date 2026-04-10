@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 /**
  * After 4.2.0: One-line DLQ config using KIP-1034.
@@ -81,7 +82,7 @@ public class App {
             if (!toDelete.isEmpty()) {
                 admin.deleteTopics(toDelete).all().get();
                 System.out.println("[App] Deleted topics: " + toDelete);
-                Thread.sleep(1000);
+                waitForTopicsAbsent(admin, toDelete);
             }
 
             Collection<NewTopic> newTopics = Arrays.asList(
@@ -91,8 +92,35 @@ public class App {
             );
             admin.createTopics(newTopics).all().get();
             System.out.println("[App] Created topics: " + topics);
-            Thread.sleep(1000);
+            waitForTopicsPresent(admin, topics);
         }
+    }
+
+    private static void waitForTopicsAbsent(AdminClient admin, List<String> topics)
+            throws ExecutionException, InterruptedException {
+        waitForTopicState(admin, topics, false);
+    }
+
+    private static void waitForTopicsPresent(AdminClient admin, List<String> topics)
+            throws ExecutionException, InterruptedException {
+        waitForTopicState(admin, topics, true);
+    }
+
+    private static void waitForTopicState(AdminClient admin, List<String> topics, boolean shouldExist)
+            throws ExecutionException, InterruptedException {
+        long deadline = System.currentTimeMillis() + 10_000;
+        while (System.currentTimeMillis() < deadline) {
+            Set<String> existing = admin.listTopics().names().get();
+            boolean matches = shouldExist
+                    ? topics.stream().allMatch(existing::contains)
+                    : topics.stream().noneMatch(existing::contains);
+            if (matches) {
+                return;
+            }
+            Thread.sleep(250);
+        }
+        throw new ExecutionException(new TimeoutException(
+                "Timed out waiting for topics to " + (shouldExist ? "exist" : "disappear") + ": " + topics));
     }
 
     // ── test data ────────────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.Produced;
 
 import java.util.Collections;
 
@@ -65,7 +66,7 @@ public class ClickEventManualDlqTopology {
                     return Collections.emptyList();
                 }
             })
-            .to(outputTopic);
+            .to(outputTopic, Produced.with(Serdes.String(), Serdes.String()));
 
         return builder.build();
     }

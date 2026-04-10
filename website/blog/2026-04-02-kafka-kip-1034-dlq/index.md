@@ -333,33 +333,7 @@ assertTrue(headerNames.contains("__streams.errors.offset"));
 
 ## 用測試看行為差異，比講概念更準
 
-這裡補充一點：很多細節放在測試裡看會更直接，因為 input、output、DLQ record 和 headers 都能在同一個地方觀察。
-
-### `before` 測的是什麼
-
-`before` 現在拆成兩個測試重點：
-
-1. `ClickEventManualDlqTopologyTest`
-   驗證 processing error 這條路：正常資料會進 output，business rule 失敗的資料會被手動送進 DLQ。
-2. `ManualDlqHandlerTest`
-   驗證 deserialization error 這條路：壞 JSON 會進到 `ManualDlqHandler`，並由它手動送出 DLQ record。
-
-### `after` 測的是什麼
-
-`ClickEventTopologyTest` 的重點就乾淨很多。它直接在 config 裡打開：
-
-```java
-props.put(StreamsConfig.ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG, DLQ_TOPIC);
-props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
-        LogAndContinueExceptionHandler.class);
-```
-
-接著測四種情況：
-
-1. valid record 正常進 output。
-2. invalid record 進 DLQ。
-3. DLQ record 真的帶有 `__streams.errors.*` headers。
-4. mixed records 會同時正確流向 output 和 DLQ。
+這裡補充一點：很多細節放在測試裡看會更直接，因為 input、output、DLQ record 和 headers 都能在同一個地方觀察。若想對照本文提到的 routing 與 header 行為，直接看 `before/` 和 `after/` 的測試會很快。
 
 如果你想自己跑一次範例，專案目錄在：
 
