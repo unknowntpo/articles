@@ -241,7 +241,11 @@ props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
 
 這就是 KIP-1034 最重要的差別。它不只是幫你省掉自己建 `ProducerRecord` 的麻煩，也把 DLQ 重新納入 Kafka Streams 的一致性模型裡。
 
-不過這裡要補一個前提：`errors.dead.letter.queue.topic.name` 這個設定，是讓 Kafka Streams 的內建 exception handler 幫你建預設 DLQ record。若你自己換成 custom deserialization / processing / production handler，這個設定對那個 custom handler 可能就不生效了，得由 handler 自己決定要不要建 DLQ record。換句話說，本文講的「一行 config 啟用 DLQ」成立的前提，是你走的是內建 handler 的那條路。
+不過這裡要補一個前提：`errors.dead.letter.queue.topic.name` 這個設定，是讓 Kafka Streams 的內建 exception handler 幫你建預設 DLQ record。若你自己換成 custom deserialization / processing / production handler，這個設定對該 handler 會被忽略，得由 handler 自己決定要不要建立 DLQ record。
+
+但這不代表 custom handler 就一定回到舊版那種手動 producer 寫法。KIP-1034 之後，custom handler 也可以自己建立要送去 DLQ 的 records，再透過 handler 的 `Response` 回交給 Kafka Streams 送出。只要你走的還是這條框架內建路徑，DLQ 依然可以和 Kafka Streams 的寫入流程對齊；真正會掉回 transaction 外的，是你在 handler 裡自己開一把獨立 `KafkaProducer` 然後直接 `send()`。
+
+換句話說，本文講的「一行 config 啟用 DLQ」成立的前提，是你走的是內建 handler 的那條路；若你要自訂 handler，也還是可以維持同一條 Streams 寫入路徑，只是 DLQ record 的建立責任會從框架預設實作，改成你自己負責。
 
 如果把 `after` 帶來的方便功能拆開看，大概可以整理成這幾件事：
 
