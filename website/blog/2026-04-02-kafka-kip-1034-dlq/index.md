@@ -333,7 +333,7 @@ assertTrue(headerNames.contains("__streams.errors.offset"));
 
 ## 用測試看行為差異，比講概念更準
 
-這裡的另一個好處，是你不需要先起 broker 才能理解行為。`before` 跟 `after` 都有測試，所以很多事情可以直接在單元測試層驗證。
+這裡補充一點：很多細節放在測試裡看會更直接，因為 input、output、DLQ record 和 headers 都能在同一個地方觀察。
 
 ### `before` 測的是什麼
 
@@ -343,8 +343,6 @@ assertTrue(headerNames.contains("__streams.errors.offset"));
    驗證 processing error 這條路：正常資料會進 output，business rule 失敗的資料會被手動送進 DLQ。
 2. `ManualDlqHandlerTest`
    驗證 deserialization error 這條路：壞 JSON 會進到 `ManualDlqHandler`，並由它手動送出 DLQ record。
-
-這也反映了舊作法的本質：processing error 和 deserialization error 不只處理位置不同，連測試都得分開驗證。
 
 ### `after` 測的是什麼
 
@@ -362,8 +360,6 @@ props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
 2. invalid record 進 DLQ。
 3. DLQ record 真的帶有 `__streams.errors.*` headers。
 4. mixed records 會同時正確流向 output 和 DLQ。
-
-這裡的差別很能說明 KIP-1034 的價值。新版測試在驗證的是「框架行為」，不是「我自己額外包出來的 workaround 有沒有剛好送成功」。
 
 如果你想自己跑一次範例，專案目錄在：
 
