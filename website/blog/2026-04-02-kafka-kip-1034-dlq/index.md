@@ -241,6 +241,10 @@ props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
 4. Kafka Streams 透過 `RecordCollectorImpl` 用同一個 `StreamsProducer` 把 record 送出去。
 5. 因為走的是同一個 producer，所以它也落在同一個 transaction 裡。
 
+有一個前提值得說清楚。`ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG` 並不是框架直接讀了就自動 route 的開關，它只是一個 config 值，透過 `configure()` 傳給 handler，要不要用由 handler 自己決定。`LogAndContinueExceptionHandler` 的做法是在 `configure()` 把它存起來，然後在 `handleError()` 裡用 `ExceptionHandlerUtils.maybeBuildDeadLetterQueueRecords()` 建 DLQ record 帶回去；框架收到 `Response` 之後，才真的透過 `RecordCollectorImpl` 送出去。
+
+換句話說，如果你換成自己的 custom handler，但沒有在 `configure()` 讀這個 config、也沒有自己建 DLQ records，這個設定就不會有任何效果。它不是框架層的強制行為，而是給 handler 實作用的資訊。
+
 這就是 KIP-1034 最重要的差別。它不只是幫你省掉自己建 `ProducerRecord` 的麻煩，也把 DLQ 重新納入 Kafka Streams 的一致性模型裡。
 
 不過這裡要補一個前提：`errors.dead.letter.queue.topic.name` 這個設定，是讓 Kafka Streams 的內建 exception handler 幫你建預設 DLQ record。若你自己換成 custom deserialization / processing / production handler，這個設定對該 handler 會被忽略，得由 handler 自己決定要不要建立 DLQ record。
@@ -294,7 +298,7 @@ public ProcessingExceptionHandler.Response handleError(
 - KIP-1034 的能力不只涵蓋 deserialization handler，也延伸到 processing / production exception handler；只是本文範例聚焦在 deserialization path。
 - 你比較容易把 DLQ 跟 `exactly_once_v2` 放在一起思考，因為現在它終於回到同一個 transaction 模型裡。
 
-對日常維運來說，這些改變的價值很直接：設定比較少、拓樸比較乾淨、錯誤資訊比較完整、測試比較好寫，更重要的是，DLQ 不再是 transaction 外的額外寫入，整體行為也比較能和 Kafka Streams 的 EOS 模型對齊。
+實際用起來差別很直接：設定少了、topology 乾淨了、error 資訊有框架補、測試也好寫了。最重要的是 DLQ 不再掛在 transaction 外面，它終於能跟 EOS 模型一起運作。
 
 :::note
 KIP-1034 只定義了「怎麼送 DLQ record」和「預設要帶哪些 headers」，但 DLQ topic 本身不會由 Kafka Streams 自動建立。repo 裡的 `after/src/main/java/io/example/App.java` 會先把 `click-events-dlq` topic 建好，就是因為這個前提。
@@ -378,7 +382,7 @@ assertTrue(headerNames.contains("__streams.errors.offset"));
 | Error headers | 要自己補、自己命名、自己維護 | 框架自動附上 `__streams.errors.*` |
 | 程式碼量 | topology、handler、headers、producer lifecycle 都要自己顧 | 搭配內建 handler 時，主流程通常只要一行 config 就能啟用 |
 
-如果把前面講的內容濃縮成一句話，Kafka 4.2.0 以前的 DLQ 比較像 application 自己補出來的機制；到了 KIP-1034 之後，DLQ 才真正變成 Kafka Streams 內建、而且能和 transaction 模型一起運作的能力。
+Kafka 4.2.0 以前的 DLQ，比較像 application 自己打的補丁；KIP-1034 之後，它才算真正進了框架、能跟 transaction 模型一起運作。
 
 ## 用測試看行為差異，比講概念更準
 
