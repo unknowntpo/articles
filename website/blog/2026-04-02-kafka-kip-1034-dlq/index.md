@@ -319,7 +319,7 @@ public ProcessingExceptionHandler.Response handleError(
 - 你不用再把 DLQ 邏輯塞進 topology，主流程可以維持乾淨。
 - 你不用再自己補一堆 error headers，常用的 exception / topic / partition / offset 都會自動帶上。
 - 你不用再為 deserialization error 另外發明一套 workaround，框架已經有正式路徑可以處理。
-- KIP-1034 的能力不只涵蓋 deserialization handler，也延伸到 processing / production exception handler；只是本文範例聚焦在 deserialization path。`ProductionExceptionHandler` 值得特別說一句：它負責的是 Kafka Streams 送出 records 時的寫入錯誤；4.2.0 以前，`handle()` 只能回傳 CONTINUE 或 FAIL，沒有 DLQ 選項；4.2.0 之後，`handleError()` 回傳 `Response`，可以帶 DLQ records，也多了 RETRY 選項。
+- KIP-1034 的能力不只涵蓋 deserialization handler，也延伸到 processing / production exception handler；只是本文範例聚焦在 deserialization path。`ProductionExceptionHandler` 值得特別說一句：它負責的是處理過後、Kafka Streams 送出到下游時的寫入錯誤；4.2.0 以前，`handle()` 只能回傳 CONTINUE 或 FAIL，沒有 DLQ 選項；4.2.0 之後，`handleError()` 回傳 `Response`，可以帶 DLQ records，也多了 RETRY 選項。
 - 你比較容易把 DLQ 跟 `exactly_once_v2` 放在一起思考，因為現在它終於回到同一個 transaction 模型裡。
 
 實際用起來差別很直接：設定少了、topology 乾淨了、error 資訊有框架補、測試也好寫了。最重要的是 DLQ 不再掛在 transaction 外面，它終於能跟 EOS 模型一起運作。
