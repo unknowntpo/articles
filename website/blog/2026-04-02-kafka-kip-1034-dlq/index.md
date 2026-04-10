@@ -241,9 +241,7 @@ props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
 4. Kafka Streams 透過 `RecordCollectorImpl` 用同一個 `StreamsProducer` 把 record 送出去。
 5. 因為走的是同一個 producer，所以它也落在同一個 transaction 裡。
 
-有一個前提值得說清楚。`ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG` 並不是框架直接讀了就自動 route 的開關。它透過 `configure()` 傳給 handler，`LogAndContinueExceptionHandler` 在 `configure()` 把它存起來、在 `handleError()` 裡用 `ExceptionHandlerUtils.maybeBuildDeadLetterQueueRecords()` 建 DLQ record 帶回去，框架才透過 `RecordCollectorImpl` 送出去——這套邏輯是 `LogAndContinueExceptionHandler` 自己實作的，不是框架強制的。
-
-換句話說，一旦你換成自己寫的 handler，這個 config 對它就沒有效果。DLQ 要不要送、怎麼送，完全由你自己的 handler 決定。
+補充一點：`ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG` 之所以有效，是因為 `LogAndContinueExceptionHandler` 自己實作了讀 config、建 DLQ record 的邏輯，不是框架自動強制的。大多數情況下內建 handler 已經夠用；若有需要，也可以換成自己的 handler 來控制 DLQ 的行為。
 
 這就是 KIP-1034 最重要的差別。它不只是幫你省掉自己建 `ProducerRecord` 的麻煩，也把 DLQ 重新納入 Kafka Streams 的一致性模型裡。
 
