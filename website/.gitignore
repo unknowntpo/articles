@@ -3,10 +3,12 @@
 
 # Production
 /build
+examples/**/build
 
 # Generated files
 .docusaurus
 .cache-loader
+examples/**/.gradle
 
 # Misc
 .DS_Store
