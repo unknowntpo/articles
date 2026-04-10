@@ -243,6 +243,35 @@ props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
 
 補充一點：`ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG` 之所以有效，是因為 `LogAndContinueExceptionHandler` 自己實作了讀 config、建 DLQ record 的邏輯，不是框架自動強制的。大多數情況下內建 handler 已經夠用；若有需要，也可以換成自己的 handler 來控制 DLQ 的行為。
 
+但這不代表 custom handler 就一定得回到舊版那種手動 producer 寫法。KIP-1034 之後 exception handler 的介面本身就改了：舊版 `handle()` 只能回傳 CONTINUE 或 FAIL；新版 `handleError()` 回傳的是一個 `Response` 物件，裡面可以帶 `ProducerRecord` 列表，由 Kafka Streams 透過同一個 producer 送出去。
+
+```java
+// Kafka 3.x：想送 DLQ 只能自己開 producer
+@Override
+public DeserializationHandlerResponse handle(
+        ErrorHandlerContext context,
+        ConsumerRecord<byte[], byte[]> record,
+        Exception exception) {
+    ProducerRecord<byte[], byte[]> dlqRecord =
+            new ProducerRecord<>("app-dlq", record.key(), record.value());
+    dlqProducer.send(dlqRecord).get();  // 獨立 producer，不在 Streams tx 裡
+    return DeserializationHandlerResponse.CONTINUE;
+}
+
+// Kafka 4.2.0：把 DLQ record 帶回給框架，走同一條 tx 路徑
+@Override
+public DeserializationExceptionHandler.Response handleError(
+        ErrorHandlerContext context,
+        ConsumerRecord<byte[], byte[]> record,
+        Exception exception) {
+    ProducerRecord<byte[], byte[]> dlqRecord =
+            new ProducerRecord<>("app-dlq", record.key(), record.value());
+    return DeserializationExceptionHandler.Response.resume(List.of(dlqRecord));
+}
+```
+
+重點不在 custom handler 怎麼寫，而在介面設計的差異：`handleError()` 讓 handler 可以把 DLQ records 回交給 Kafka Streams，框架統一送出，不需要另外開 producer。
+
 這就是 KIP-1034 最重要的差別。它不只是幫你省掉自己建 `ProducerRecord` 的麻煩，也把 DLQ 重新納入 Kafka Streams 的一致性模型裡。
 
 不過這裡要補一個前提：`errors.dead.letter.queue.topic.name` 這個設定，是讓 Kafka Streams 的內建 exception handler 幫你建預設 DLQ record。若你自己換成 custom deserialization / processing / production handler，這個設定對該 handler 會被忽略，得由 handler 自己決定要不要建立 DLQ record。
