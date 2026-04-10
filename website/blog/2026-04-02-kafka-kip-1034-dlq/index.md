@@ -267,7 +267,7 @@ public DeserializationExceptionHandler.Response handleError(
 }
 ```
 
-重點不在 custom handler 怎麼寫，而在介面設計的差異：`handleError()` 讓 handler 可以把 DLQ records 回交給 Kafka Streams，框架統一送出，不需要另外開 producer。
+介面差異就在這：`handleError()` 讓 handler 把 DLQ records 回交給框架送出，不需要另外開 producer。
 
 這就是 KIP-1034 最重要的差別。它不只是幫你省掉自己建 `ProducerRecord` 的麻煩，也把 DLQ 重新納入 Kafka Streams 的一致性模型裡。
 
