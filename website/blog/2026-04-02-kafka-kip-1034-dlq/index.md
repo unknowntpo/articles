@@ -54,7 +54,7 @@ click-events -> deserialize X -> process -> output
 
 先講 Kafka 4.2.0 以前常見的手動 DLQ 作法。麻煩的地方在於，你不是只要接一種錯誤就好，而是得分別處理兩種不同型態的 exception。repo 裡的 `before/` 只是把這兩種情況整理成可重現的範例，方便對照它們各自的限制。
 
-### 路線一：processing error 發生在 topology 裡
+### Processing error：發生在 topology 裡
 
 如果錯誤是出現在 topology 內部，你還有很多地方可以攔。這裡示範的做法，是先讓資料正常完成 deserialization，接著在 `flatMap` 這類 DSL 轉換裡處理後續的 business rule，並在需要時自己 `try/catch`。
 
@@ -97,7 +97,7 @@ dlqProducer.send(dlqRecord).get();
 
 問題是，這個 `dlqProducer` 跟 Kafka Streams 內部那個 producer 是兩回事。這代表你得自己多維護一個 producer，而不是讓 Streams 用內部機制幫你送。更重要的是，這個做法無法納入 Kafka Streams 的同一個 transaction，因此也沒辦法讓 DLQ 這條寫入路徑和主流程一起達成 EOS。
 
-### 路線二：deserialization error 發生在 topology 之前
+### Deserialization error：發生在 topology 之前
 
 更麻煩的是 deserialization error。
 
