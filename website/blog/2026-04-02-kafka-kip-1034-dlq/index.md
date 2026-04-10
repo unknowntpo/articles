@@ -437,9 +437,9 @@ cd examples/kafka/kip-1034-dlq-blog-post
 
 KIP-1034 這個功能我覺得很實用，因為它剛好補在一個很常痛、又很難自己補漂亮的地方。
 
-在 Kafka 4.2.0 以前，DLQ 不是做不到，但你得自己處理很多框架本來不知道的事：錯誤發生在哪一層、怎麼送出去、headers 怎麼補、transaction 怎麼對齊。只要其中一塊沒顧好，整套方案就容易長成半套。
+在 Kafka 4.2.0 以前，DLQ 不是做不到，但你得自己顧很多細節：錯誤發生在哪一層、怎麼送出去、headers 怎麼補，最難的是 transaction 邊界——用獨立 producer 送 DLQ 就跳出了 Streams 的 tx 範圍，tx-safe 根本無從談起。只要其中一塊沒顧好，整套方案就容易長成半套。
 
-到了 Kafka 4.2.0，事情終於簡單很多。你把 `StreamsConfig.ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG` 設好，搭配 `LogAndContinueExceptionHandler`，就能讓 DLQ 走進 Kafka Streams 自己的處理流程。這也不只是語法糖，原本散落在 application 層的責任，現在終於回到 Kafka Streams 內部。
+到了 Kafka 4.2.0，事情終於簡單很多。把 `StreamsConfig.ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG` 設好，deserialization 錯誤搭配 `LogAndContinueExceptionHandler`、processing 錯誤搭配 `LogAndContinueProcessingExceptionHandler`，就能讓這兩條路都走進 Kafka Streams 自己的處理流程，不需要另外開 producer。
 
 如果你現在正好有 Kafka Streams 應用卡在手動錯誤處理，這一版很值得看一下。
 
