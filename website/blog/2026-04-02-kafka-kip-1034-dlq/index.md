@@ -205,7 +205,7 @@ manual dlqProducer
 
 這裡的改變很關鍵，因為一旦是框架自己送，就能走它原本那套 producer、原本那個 transaction，而不是你另外繞出去開一個獨立 producer。
 
-`after/` 的範例特別值得看，因為它的 topology 幾乎乾淨到不像在處理 DLQ：
+到了 KIP-1034 之後，topology 本身會乾淨很多：
 
 ```java
 builder
@@ -303,7 +303,7 @@ KIP-1034 之後，框架會自動附上這些 `__streams.errors.*` headers：
 - `__streams.errors.partition`
 - `__streams.errors.offset`
 
-這點在 `ClickEventTopologyTest.java` 也有直接驗證。測試不是只檢查「壞資料有沒有進 DLQ」，而是把 DLQ record 讀出來，確認這幾個 header 都真的存在。
+這些 headers 也能在 `ClickEventTopologyTest.java` 裡直接驗證到。測試會把 DLQ record 讀出來，確認這幾個 header 都真的存在。
 
 ```java
 assertTrue(headerNames.contains("__streams.errors.exception"));
@@ -331,7 +331,7 @@ assertTrue(headerNames.contains("__streams.errors.offset"));
 
 ## 用測試看行為差異，比講概念更準
 
-這份範例我很喜歡的一點，是它沒有要求你一定要先起 broker 才能理解行為。`before` 跟 `after` 都有用 `TopologyTestDriver` 寫測試，所以很多事情可以直接在單元測試層驗證。
+這裡的另一個好處，是你不需要先起 broker 才能理解行為。`before` 跟 `after` 都有用 `TopologyTestDriver` 寫測試，所以很多事情可以直接在單元測試層驗證。
 
 ### `before` 測的是什麼
 
@@ -341,7 +341,7 @@ assertTrue(headerNames.contains("__streams.errors.offset"));
 2. 壞資料不會進 output，而是呼叫手動的 DLQ producer。
 3. valid / invalid 混在一起時，路由結果是否正確。
 
-它用 `@Mock KafkaProducer` 加 `ArgumentCaptor` 去抓那筆手動送出的 DLQ record。這個測試其實也反映了舊作法的本質：你要驗證 DLQ，就得 mock 你自己額外建出來的 producer。
+它用 `@Mock KafkaProducer` 加 `ArgumentCaptor` 去抓那筆手動送出的 DLQ record。這也反映了舊作法的本質：你要驗證 DLQ，就得 mock 你自己額外建出來的 producer。
 
 ### `after` 測的是什麼
 
