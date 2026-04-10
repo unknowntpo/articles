@@ -247,6 +247,42 @@ props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
 
 但這不代表 custom handler 就一定得回到舊版那種手動 producer 寫法。KIP-1034 之後，custom handler 也可以自己建立要送去 DLQ 的 records，再透過 handler 的 `Response` 回交給 Kafka Streams 送出。換句話說，自訂 handler 依然可以走 Kafka Streams 內建的 DLQ 寫入路徑，不需要另外建立 producer。
 
+如果改成 custom handler，before / after 的差別大概會像這樣：
+
+```java
+// before: 要送 DLQ，只能自己建立 producer 然後直接送
+@Override
+public DeserializationHandlerResponse handle(
+        ErrorHandlerContext context,
+        ConsumerRecord<byte[], byte[]> record,
+        Exception exception) {
+
+    ProducerRecord<byte[], byte[]> dlqRecord =
+            new ProducerRecord<>("app-dlq", record.key(), record.value());
+
+    dlqProducer.send(dlqRecord).get();
+    return DeserializationHandlerResponse.CONTINUE;
+}
+```
+
+如果把 `after` 攤開成 custom handler 的實作，會更像這樣：
+
+```java
+@Override
+public ProcessingExceptionHandler.Response handleError(
+        ErrorHandlerContext context,
+        Record<?, ?> record,
+        Exception exception) {
+
+    ProducerRecord<byte[], byte[]> dlqRecord =
+            new ProducerRecord<>("app-dlq", rawKeyBytes, rawValueBytes);
+
+    return ProcessingExceptionHandler.Response.resume(List.of(dlqRecord));
+}
+```
+
+這段 code 的重點是：before 你得自己把資料送去 Kafka，所以 handler 內部得直接依賴一個自建 producer；after 則是只負責建立 `ProducerRecord`，再透過 `Response.resume(...)` 把它回交給 Kafka Streams。真正執行送出的仍然是 Kafka Streams 內部的 producer 與 collector，所以 application 不需要另外建立 producer，DLQ 也才能沿用 Kafka Streams 本來那條寫入路徑。
+
 換句話說，本文講的「一行 config 啟用 DLQ」成立的前提，是你走的是內建 handler 的那條路；若你要自訂 handler，也還是可以維持同一條 Streams 寫入路徑，只是 DLQ record 的建立責任會從框架預設實作，改成你自己負責。
 
 如果把 `after` 帶來的方便功能拆開看，大概可以整理成這幾件事：
