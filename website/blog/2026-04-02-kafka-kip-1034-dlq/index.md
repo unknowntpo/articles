@@ -216,7 +216,7 @@ builder
     .to(outputTopic);
 ```
 
-這段 `ClickEventTopology.java` 沒有任何 DLQ 相關 code。沒有手動 `try/catch`、沒有自建 producer、沒有自己補 headers。所有 DLQ 的事情，都不在 topology 裡面處理。
+這段 `ClickEventTopology.java` 沒有任何 DLQ 相關 code。沒有手動 `try/catch`、沒有另外建立 producer、沒有自己補 headers。所有 DLQ 的事情，都不在 topology 裡面處理。
 
 真正啟用 DLQ 的地方，只在 `App.java` 這一行：
 
@@ -231,6 +231,8 @@ props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
         LogAndContinueExceptionHandler.class);
 ```
 
+這裡其實也是 KIP-1034 最核心的 API 變化。舊版 exception handler 的回傳值，本質上只是在回答「繼續」或「失敗」；到了 4.2.0 之後，handler 的新 `Response` 則多帶了一份「要不要順便送這些 DLQ records」的資訊。也因為 handler 現在可以把 DLQ records 回交給 Kafka Streams，框架才有辦法接手用自己內部的 `StreamsProducer` / `RecordCollector` 去送，而不是把送 DLQ 這件事丟回 application 自己處理。
+
 這兩行合起來的效果是：
 
 1. `ClickEventSerde` 反序列化失敗時，會拋 exception。
@@ -243,7 +245,7 @@ props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
 
 不過這裡要補一個前提：`errors.dead.letter.queue.topic.name` 這個設定，是讓 Kafka Streams 的內建 exception handler 幫你建預設 DLQ record。若你自己換成 custom deserialization / processing / production handler，這個設定對該 handler 會被忽略，得由 handler 自己決定要不要建立 DLQ record。
 
-但這不代表 custom handler 就一定回到舊版那種手動 producer 寫法。KIP-1034 之後，custom handler 也可以自己建立要送去 DLQ 的 records，再透過 handler 的 `Response` 回交給 Kafka Streams 送出。只要你走的還是這條框架內建路徑，DLQ 依然可以和 Kafka Streams 的寫入流程對齊；真正會掉回 transaction 外的，是你在 handler 裡自己開一把獨立 `KafkaProducer` 然後直接 `send()`。
+但這不代表 custom handler 就一定得回到舊版那種手動 producer 寫法。KIP-1034 之後，custom handler 也可以自己建立要送去 DLQ 的 records，再透過 handler 的 `Response` 回交給 Kafka Streams 送出。換句話說，自訂 handler 依然可以走 Kafka Streams 內建的 DLQ 寫入路徑，不需要另外建立 producer。
 
 換句話說，本文講的「一行 config 啟用 DLQ」成立的前提，是你走的是內建 handler 的那條路；若你要自訂 handler，也還是可以維持同一條 Streams 寫入路徑，只是 DLQ record 的建立責任會從框架預設實作，改成你自己負責。
 
