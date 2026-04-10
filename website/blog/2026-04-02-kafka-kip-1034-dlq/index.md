@@ -109,10 +109,10 @@ dlqProducer.send(dlqRecord).get();
 `RecordQueue.addRawRecords()` 先把 raw records 放進 queue，接著 `updateHead()` 會呼叫 `recordDeserializer.deserialize(processorContext, raw)`；之後 `StreamTask.process()` 才從 `partitionGroup.nextRecord(...)` 取出 record，交給 `doProcess()` 傳進 source node。也就是說，deserialization 確實發生在 record 進入 topology 之前。
 
 參考：
-- [RecordQueue.addRawRecords()](https://github.com/apache/kafka/blob/trunk/streams/src/main/java/org/apache/kafka/streams/processor/internals/RecordQueue.java#L976-L985)
-- [RecordQueue.updateHead()](https://github.com/apache/kafka/blob/trunk/streams/src/main/java/org/apache/kafka/streams/processor/internals/RecordQueue.java#L1114-L1126)
-- [StreamTask.process()](https://github.com/apache/kafka/blob/trunk/streams/src/main/java/org/apache/kafka/streams/processor/internals/StreamTask.java#L3497-L3533)
-- [StreamTask.doProcess()](https://github.com/apache/kafka/blob/trunk/streams/src/main/java/org/apache/kafka/streams/processor/internals/StreamTask.java#L3654-L3694)
+- [RecordQueue.addRawRecords()](https://github.com/apache/kafka/blob/4.2.0/streams/src/main/java/org/apache/kafka/streams/processor/internals/RecordQueue.java)
+- [RecordQueue.updateHead()](https://github.com/apache/kafka/blob/4.2.0/streams/src/main/java/org/apache/kafka/streams/processor/internals/RecordQueue.java)
+- [StreamTask.process()](https://github.com/apache/kafka/blob/4.2.0/streams/src/main/java/org/apache/kafka/streams/processor/internals/StreamTask.java)
+- [StreamTask.doProcess()](https://github.com/apache/kafka/blob/4.2.0/streams/src/main/java/org/apache/kafka/streams/processor/internals/StreamTask.java)
 :::
 
 `ManualDlqHandler.java` 示範的就是這條路：
