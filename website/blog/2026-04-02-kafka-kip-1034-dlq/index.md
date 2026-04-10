@@ -218,17 +218,14 @@ builder
 
 這段 `ClickEventTopology.java` 沒有任何 DLQ 相關 code。沒有手動 `try/catch`、沒有另外建立 producer、沒有自己補 headers。所有 DLQ 的事情，都不在 topology 裡面處理。
 
-真正啟用 DLQ 的地方，只在 `App.java` 這一行：
+真正啟用 DLQ 的地方，只要在 `App.java` 設好這幾行：
 
 ```java
 props.put(StreamsConfig.ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG, DLQ_TOPIC);
-```
-
-再搭配 deserialization handler：
-
-```java
 props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
         LogAndContinueExceptionHandler.class);
+props.put(StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG,
+        LogAndContinueProcessingExceptionHandler.class);
 ```
 
 這裡其實也是 KIP-1034 最核心的 API 變化。舊版 exception handler 的回傳值，本質上只是在回答「繼續」或「失敗」；到了 4.2.0 之後，handler 的新 `Response` 則多帶了一份「要不要順便送這些 DLQ records」的資訊。也因為 handler 現在可以把 DLQ records 回交給 Kafka Streams，框架才有辦法接手用自己內部的 `StreamsProducer` / `RecordCollector` 去送，而不是把送 DLQ 這件事丟回 application 自己處理。
