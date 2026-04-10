@@ -168,29 +168,23 @@ BEGIN TX
 COMMIT TX
 ```
 
-如果你在這個過程中，另外拿一個獨立的 `KafkaProducer` 去送 DLQ，那筆 DLQ record 根本不在同一個 transaction 裡。
+如果你在這個過程中，另外拿一個獨立的 `KafkaProducer` 去送 DLQ，問題其實很直接：這個 `dlqProducer` 和 Kafka Streams 內部用來送 output 的 producer，不是同一個 producer instance。既然不是同一個 producer，就不可能共享同一個 Kafka transaction。
 
 用圖看會更清楚：
 
 ```text
-Kafka Streams TX
+Kafka Streams internal producer
+  -> output records
+  -> transaction A
 
-+----------- begin transaction -----------+
-| consume -> deserialize -> process       |
-|                           |             |
-|                           +-> output    |
-|                               (in TX)   |
-+------------- commit / abort ------------+
-
-manual DLQ producer
-
-process error / handler
-        |
-        +-> dlqProducer.send()
-            (outside TX)
+manual dlqProducer
+  -> DLQ records
+  -> not part of transaction A
 ```
 
-也就是說，可能會發生這種事：
+也就是說，手動送出的 DLQ record 不會落在 Kafka Streams 那條 transactional write path 裡。
+
+進一步來看，可能會發生這種事：
 
 1. 你的手動 DLQ producer 已經把壞資料送出去了。
 2. 但 Streams 自己那個 transaction 後面因為 rebalance、crash，或其他原因 abort。
@@ -199,23 +193,7 @@ process error / handler
 
 結果就是，這條 DLQ 寫入路徑看起來能用，但其實可能在 retry 時重複寫入。
 
-這一點在 `before/` 裡其實寫得很清楚。無論是 `ClickEventManualDlqTopology.java` 還是 `ManualDlqHandler.java`，class comment 都在強調同一件事：只要是獨立 producer，就不在 Streams 的 transaction 內，abort 之後沒辦法跟著 rollback。
-
-如果用時序來看，`before` 大概是這樣：
-
-```text
-Streams                 Manual DLQ Producer             Kafka
-   |                           |                        |
-   | begin TX                  |                        |
-   | process bad record        |                        |
-   |-------------------------->| send DLQ               |
-   |                           |----------------------->|
-   |                           |      DLQ committed     |
-   | abort TX                  |                        |
-   | retry same record         |                        |
-   |-------------------------->| send DLQ again         |
-   |                           |----------------------->|
-```
+這也是手動 DLQ 最麻煩的地方：只要你是另外用獨立 producer 把資料送出去，那筆寫入就不會落在 Kafka Streams 的 transaction 裡。後面如果發生 abort 或 retry，DLQ 這條路徑自然也不會跟著 rollback。
 
 所以舊版真正卡住的點，是框架本身沒有給你一條正式、內建、可 tx-safe 的 DLQ 路。
 
@@ -338,7 +316,7 @@ assertTrue(headerNames.contains("__streams.errors.offset"));
 
 這個細節之所以重要，是因為 DLQ 並不只是承接錯誤資料而已。實務上，後續往往還牽涉到原因追查、告警、資料回補，甚至 replay。若這些 metadata 能由框架穩定補齊，後續處理就會省事許多。
 
-## 到這裡，可以先把差異收一下
+## 總結
 
 | 項目 | Kafka 4.2.0 以前的手動作法 | Kafka 4.2.0 / KIP-1034 |
 | --- | --- | --- |
