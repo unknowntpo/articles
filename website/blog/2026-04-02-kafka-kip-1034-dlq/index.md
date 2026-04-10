@@ -218,17 +218,14 @@ builder
 
 這段 `ClickEventTopology.java` 沒有任何 DLQ 相關 code。沒有手動 `try/catch`、沒有另外建立 producer、沒有自己補 headers。所有 DLQ 的事情，都不在 topology 裡面處理。
 
-真正啟用 DLQ 的地方，只在 `App.java` 這一行：
+真正啟用 DLQ 的地方，只要在 `App.java` 設好這幾行：
 
 ```java
 props.put(StreamsConfig.ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG, DLQ_TOPIC);
-```
-
-再搭配 deserialization handler：
-
-```java
 props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
         LogAndContinueExceptionHandler.class);
+props.put(StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG,
+        LogAndContinueProcessingExceptionHandler.class);
 ```
 
 這裡其實也是 KIP-1034 最核心的 API 變化。舊版 exception handler 的回傳值，本質上只是在回答「繼續」或「失敗」；到了 4.2.0 之後，handler 的新 `Response` 則多帶了一份「要不要順便送這些 DLQ records」的資訊。也因為 handler 現在可以把 DLQ records 回交給 Kafka Streams，框架才有辦法接手用自己內部的 `StreamsProducer` / `RecordCollector` 去送，而不是把送 DLQ 這件事丟回 application 自己處理。
@@ -240,6 +237,37 @@ props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
 3. 4.2.0 的 handler 可以建立 DLQ record，並把它交還給 Kafka Streams。
 4. Kafka Streams 透過 `RecordCollectorImpl` 用同一個 `StreamsProducer` 把 record 送出去。
 5. 因為走的是同一個 producer，所以它也落在同一個 transaction 裡。
+
+補充一點：`ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG` 之所以有效，是因為 `LogAndContinueExceptionHandler` 自己實作了讀 config、建 DLQ record 的邏輯，不是框架自動強制的。大多數情況下內建 handler 已經夠用；若有需要，也可以換成自己的 handler 來控制 DLQ 的行為。
+
+但這不代表 custom handler 就一定得回到舊版那種手動 producer 寫法。KIP-1034 之後 exception handler 的介面本身就改了：舊版 `handle()` 只能回傳 CONTINUE 或 FAIL；新版 `handleError()` 回傳的是一個 `Response` 物件，裡面可以帶 `ProducerRecord` 列表，由 Kafka Streams 透過同一個 producer 送出去。
+
+```java
+// Kafka 4.2.0 以前：想送 DLQ 只能自己開 producer
+@Override
+public DeserializationHandlerResponse handle(
+        ErrorHandlerContext context,
+        ConsumerRecord<byte[], byte[]> record,
+        Exception exception) {
+    ProducerRecord<byte[], byte[]> dlqRecord =
+            new ProducerRecord<>("app-dlq", record.key(), record.value());
+    dlqProducer.send(dlqRecord).get();  // 獨立 producer，不在 Streams tx 裡
+    return DeserializationHandlerResponse.CONTINUE;
+}
+
+// Kafka 4.2.0：把 DLQ record 帶回給框架，走同一條 tx 路徑
+@Override
+public DeserializationExceptionHandler.Response handleError(
+        ErrorHandlerContext context,
+        ConsumerRecord<byte[], byte[]> record,
+        Exception exception) {
+    ProducerRecord<byte[], byte[]> dlqRecord =
+            new ProducerRecord<>("app-dlq", record.key(), record.value());
+    return DeserializationExceptionHandler.Response.resume(List.of(dlqRecord));
+}
+```
+
+介面差異就在這：`handleError()` 讓 handler 把 DLQ records 回交給框架送出，不需要另外開 producer。
 
 這就是 KIP-1034 最重要的差別。它不只是幫你省掉自己建 `ProducerRecord` 的麻煩，也把 DLQ 重新納入 Kafka Streams 的一致性模型裡。
 
@@ -291,10 +319,10 @@ public ProcessingExceptionHandler.Response handleError(
 - 你不用再把 DLQ 邏輯塞進 topology，主流程可以維持乾淨。
 - 你不用再自己補一堆 error headers，常用的 exception / topic / partition / offset 都會自動帶上。
 - 你不用再為 deserialization error 另外發明一套 workaround，框架已經有正式路徑可以處理。
-- KIP-1034 的能力不只涵蓋 deserialization handler，也延伸到 processing / production exception handler；只是本文範例聚焦在 deserialization path。
+- KIP-1034 的能力不只涵蓋 deserialization handler，也延伸到 processing / production exception handler；只是本文範例聚焦在 deserialization path。`ProductionExceptionHandler` 值得特別說一句：它負責的是處理過後、Kafka Streams 送出到下游時的寫入錯誤；4.2.0 以前，`handle()` 只能回傳 CONTINUE 或 FAIL，沒有 DLQ 選項；4.2.0 之後，`handleError()` 回傳 `Response`，可以帶 DLQ records，也多了 RETRY 選項。
 - 你比較容易把 DLQ 跟 `exactly_once_v2` 放在一起思考，因為現在它終於回到同一個 transaction 模型裡。
 
-對日常維運來說，這些改變的價值很直接：設定比較少、拓樸比較乾淨、錯誤資訊比較完整、測試比較好寫，更重要的是，DLQ 不再是 transaction 外的額外寫入，整體行為也比較能和 Kafka Streams 的 EOS 模型對齊。
+實際用起來差別很直接：設定少了、topology 乾淨了、error 資訊有框架補、測試也好寫了。最重要的是 DLQ 不再掛在 transaction 外面，它終於能跟 EOS 模型一起運作。
 
 :::note
 KIP-1034 只定義了「怎麼送 DLQ record」和「預設要帶哪些 headers」，但 DLQ topic 本身不會由 Kafka Streams 自動建立。repo 裡的 `after/src/main/java/io/example/App.java` 會先把 `click-events-dlq` topic 建好，就是因為這個前提。
@@ -378,7 +406,7 @@ assertTrue(headerNames.contains("__streams.errors.offset"));
 | Error headers | 要自己補、自己命名、自己維護 | 框架自動附上 `__streams.errors.*` |
 | 程式碼量 | topology、handler、headers、producer lifecycle 都要自己顧 | 搭配內建 handler 時，主流程通常只要一行 config 就能啟用 |
 
-如果把前面講的內容濃縮成一句話，Kafka 4.2.0 以前的 DLQ 比較像 application 自己補出來的機制；到了 KIP-1034 之後，DLQ 才真正變成 Kafka Streams 內建、而且能和 transaction 模型一起運作的能力。
+Kafka 4.2.0 以前的 DLQ，比較像 application 自己打的補丁；KIP-1034 之後，它才算真正進了框架、能跟 transaction 模型一起運作。
 
 ## 用測試看行為差異，比講概念更準
 
@@ -406,9 +434,9 @@ cd examples/kafka/kip-1034-dlq-blog-post
 
 KIP-1034 這個功能我覺得很實用，因為它剛好補在一個很常痛、又很難自己補漂亮的地方。
 
-在 Kafka 4.2.0 以前，DLQ 不是做不到，但你得自己處理很多框架本來不知道的事：錯誤發生在哪一層、怎麼送出去、headers 怎麼補、transaction 怎麼對齊。只要其中一塊沒顧好，整套方案就容易長成半套。
+在 Kafka 4.2.0 以前，DLQ 不是做不到，但你得自己顧很多細節：錯誤發生在哪一層、怎麼送出去、headers 怎麼補，最難的是 transaction 邊界——用獨立 producer 送 DLQ 就跳出了 Streams 的 tx 範圍，tx-safe 根本無從談起。只要其中一塊沒顧好，整套方案就容易長成半套。
 
-到了 Kafka 4.2.0，事情終於簡單很多。你把 `StreamsConfig.ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG` 設好，搭配 `LogAndContinueExceptionHandler`，就能讓 DLQ 走進 Kafka Streams 自己的處理流程。這也不只是語法糖，原本散落在 application 層的責任，現在終於回到 Kafka Streams 內部。
+到了 Kafka 4.2.0，事情終於簡單很多。把 `StreamsConfig.ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG` 設好，deserialization 錯誤搭配 `LogAndContinueExceptionHandler`、processing 錯誤搭配 `LogAndContinueProcessingExceptionHandler`，就能讓這兩條路都走進 Kafka Streams 自己的處理流程，不需要另外開 producer。
 
 如果你現在正好有 Kafka Streams 應用卡在手動錯誤處理，這一版很值得看一下。
 
