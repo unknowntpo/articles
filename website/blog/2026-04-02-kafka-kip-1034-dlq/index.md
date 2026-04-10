@@ -11,7 +11,7 @@ tags: [Kafka, Kafka Streams, DLQ]
 
 如果你平常有在跑 Kafka Streams，應該多少都遇過這種情況：正常資料一路順順地進來，直到某一筆髒資料出現，整個 flow 就開始變得很尷尬。你當然可以選擇直接 fail，讓程式停掉；也可以選擇 continue，把壞資料跳過。但實務上通常還有第三個需求，就是把那筆壞資料留下來，丟到另一個 topic，之後再補救、重送，或至少做告警。這就是 DLQ（Dead Letter Queue）存在的理由。
 
-問題是，在 Kafka Streams 4.2.0 以前，這件事沒有你想像中那麼直覺。你可以做，但往往要自己補很多東西，而且一不小心就會踩到 transaction 邊界，特別是你開了 `exactly_once_v2` 之後，事情會更麻煩。
+問題是，在 Kafka Streams 4.2.0 以前，這件事沒有你想像中那麼直覺。你可以做，但往往要自己補很多東西，而且在某些情況下，根本沒有辦法做到 transaction-safe，特別是你開了 `exactly_once_v2` 之後會更明顯。
 
 Kafka 4.2.0 的 KIP-1034，就是把這一塊補起來。它帶來的改變不只是少寫幾行 code，而是讓 Kafka Streams 的內建 exception handlers 能把 DLQ record 回交給框架自己送，於是這條路徑終於能回到 Kafka Streams 的 transactional write flow 裡。這篇我想用 repo 裡的範例，從舊作法一路走到新作法，直接看差別到底在哪裡。
 
