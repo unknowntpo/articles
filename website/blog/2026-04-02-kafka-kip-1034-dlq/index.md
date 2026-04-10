@@ -106,8 +106,6 @@ dlqProducer.send(dlqRecord).get();
 :::info Kafka Streams 原始碼中的對應位置
 `RecordQueue.addRawRecords()` 先把 raw records 放進 queue，接著 `updateHead()` 會呼叫 `recordDeserializer.deserialize(processorContext, raw)`；之後 `StreamTask.process()` 才從 `partitionGroup.nextRecord(...)` 取出 record，交給 `doProcess()` 傳進 source node。也就是說，deserialization 確實發生在 record 進入 topology 之前。
 
-TODO: 這段原始碼 trace 之後要再回頭完整驗一次，特別是 `RecordQueue` / `partitionGroup` / `StreamTask` 之間的呼叫鏈是否還有更適合引用的入口點。
-
 參考：
 - [RecordQueue.addRawRecords()](https://github.com/apache/kafka/blob/trunk/streams/src/main/java/org/apache/kafka/streams/processor/internals/RecordQueue.java#L976-L985)
 - [RecordQueue.updateHead()](https://github.com/apache/kafka/blob/trunk/streams/src/main/java/org/apache/kafka/streams/processor/internals/RecordQueue.java#L1114-L1126)
