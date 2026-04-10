@@ -59,7 +59,9 @@ click-events -> deserialize X -> process -> output
 如果錯誤是出現在 topology 內部，你還有很多地方可以攔。最直覺的做法就是在 operator 裡自己 `try/catch`。
 
 :::info 為什麼這裡用 `flatMap`？
-這裡刻意用 `flatMap`，是因為這個範例的需求很適合「成功輸出 1 筆，失敗輸出 0 筆」這種型態。成功時我們回傳處理後的結果；失敗時資料改送 DLQ，主流程就不再往下送任何 record。像 `map` 或 `mapValues` 這類 operator，比較適合一進一出；如果硬要用，通常還得再額外約定 `null` 或其他 sentinel value，反而把例子搞複雜。
+這個 before 範例要表達的是手動 DLQ 的處理方式：成功的資料繼續往下送，失敗的資料改送 DLQ，主流程不再產生 output。對這種「成功 1 筆、失敗 0 筆」的 flow 來說，`flatMap` 會比 `mapValues` 自然很多。
+
+你也可以順便和後面的 `after` 範例對照看。到了 KIP-1034 之後，DLQ 交回 framework 處理，主流程只剩正常資料轉換，所以 `ClickEventTopology.java` 裡就可以直接用 `mapValues`。若在這個 before 範例裡直接丟 exception，當然也可以，但那就不會是這裡想示範的手動攔截與分流路徑。
 :::
 
 這段是 `ClickEventManualDlqTopology.java` 的核心：
