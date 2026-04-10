@@ -246,7 +246,7 @@ props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
 但這不代表 custom handler 就一定得回到舊版那種手動 producer 寫法。KIP-1034 之後 exception handler 的介面本身就改了：舊版 `handle()` 只能回傳 CONTINUE 或 FAIL；新版 `handleError()` 回傳的是一個 `Response` 物件，裡面可以帶 `ProducerRecord` 列表，由 Kafka Streams 透過同一個 producer 送出去。
 
 ```java
-// Kafka 3.x：想送 DLQ 只能自己開 producer
+// Kafka 4.2.0 以前：想送 DLQ 只能自己開 producer
 @Override
 public DeserializationHandlerResponse handle(
         ErrorHandlerContext context,
