@@ -297,7 +297,11 @@ public ProcessingExceptionHandler.Response handleError(
 對日常維運來說，這些改變的價值很直接：設定比較少、拓樸比較乾淨、錯誤資訊比較完整、測試比較好寫，更重要的是，DLQ 不再是 transaction 外的額外寫入，整體行為也比較能和 Kafka Streams 的 EOS 模型對齊。
 
 :::note
-KIP-1034 只定義了「怎麼送 DLQ record」和「預設要帶哪些 headers」，但 DLQ topic 本身不會由 Kafka Streams 自動建立。repo 裡的 `after/src/main/java/io/example/App.java` 會先把 `click-events-dlq` topic 建好，就是因為這個前提。
+KIP-1034 只定義了「怎麼送 DLQ record」和「預設要帶哪些 headers」，但 DLQ topic 本身不會由 Kafka Streams 自動建立。
+
+如果 broker 有開 `auto.create.topics.enable=true`，topic 可以由 broker 的 auto-create 機制自動建立。但 production 環境通常不建議依賴這件事：很多 cluster 會直接關掉 auto-create；就算有開，topic 也會套用 broker 預設的 partitions、replication factor、retention、cleanup policy，不一定符合你對 input / output / DLQ topic 的需求。
+
+所以 repo 裡的 `after/src/main/java/io/example/App.java` 會先把 `click-events-dlq` topic 建好，而不是依賴 broker 幫忙 auto-create。
 :::
 
 `after` 的資料流則比較像這樣：
