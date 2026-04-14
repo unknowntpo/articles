@@ -358,17 +358,6 @@ KIP-1034 之後，框架會自動附上這些 `__streams.errors.*` headers：
 - `__streams.errors.partition`
 - `__streams.errors.offset`
 
-這些 headers 也能在 `ClickEventTopologyTest.java` 裡直接驗證到。測試會把 DLQ record 讀出來，確認這幾個 header 都真的存在。
-
-```java
-assertTrue(headerNames.contains("__streams.errors.exception"));
-assertTrue(headerNames.contains("__streams.errors.message"));
-assertTrue(headerNames.contains("__streams.errors.stacktrace"));
-assertTrue(headerNames.contains("__streams.errors.topic"));
-assertTrue(headerNames.contains("__streams.errors.partition"));
-assertTrue(headerNames.contains("__streams.errors.offset"));
-```
-
 這個細節之所以重要，是因為 DLQ 並不只是承接錯誤資料而已。實務上，後續往往還牽涉到原因追查、告警、資料回補，甚至 replay。若這些 metadata 能由框架穩定補齊，後續處理就會省事許多。
 
 ## 總結
