@@ -1,15 +1,19 @@
-name: CI
+name: Deploy Blog
 
 on:
-  pull_request:
   push:
-    branches:
-      - master
-    paths-ignore:
-      - docs/**
+    tags:
+      - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   website:
@@ -31,6 +35,11 @@ jobs:
       - name: Build website
         run: bun run build
 
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: website/build
+
   dlq-demo:
     name: DLQ Demo Tests
     runs-on: ubuntu-latest
@@ -47,3 +56,17 @@ jobs:
         env:
           GRADLE_USER_HOME: ${{ runner.temp }}/gradle-home
         run: ./gradlew test
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs:
+      - website
+      - dlq-demo
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
