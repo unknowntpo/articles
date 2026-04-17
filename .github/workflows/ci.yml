@@ -5,6 +5,11 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - docs/**
+
+permissions:
+  contents: write
 
 jobs:
   website:
@@ -42,3 +47,41 @@ jobs:
         env:
           GRADLE_USER_HOME: ${{ runner.temp }}/gradle-home
         run: ./gradlew test
+
+  publish:
+    name: Publish Docs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs:
+      - website
+      - dlq-demo
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.13
+
+      - name: Install website dependencies
+        run: bun install
+
+      - name: Publish static site into docs
+        run: bun run publish
+
+      - name: Commit published docs
+        working-directory: .
+        run: |
+          if git diff --quiet -- docs; then
+            echo "No docs changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs
+          git commit -m "Publish updated site output"
+          git push origin HEAD:master
