@@ -141,8 +141,10 @@ public class App {
                     //   builds DLQ record → RecordCollectorImpl sends via same tx (tx-safe!)
                     new String[]{"user-3", "NOT_VALID_JSON"},
                     new String[]{"user-4", "{broken json"},
+                    // valid JSON but invalid business value — mapValues throws → LogAndContinueProcessingExceptionHandler
+                    new String[]{"user-5", "{\"ad_id\":\"sidebar-C\",\"count\":-7}"},
                     // another valid record
-                    new String[]{"user-5", "{\"ad_id\":\"sidebar-C\",\"count\":7}"}
+                    new String[]{"user-6", "{\"ad_id\":\"sidebar-D\",\"count\":7}"}
             );
 
             for (String[] msg : messages) {

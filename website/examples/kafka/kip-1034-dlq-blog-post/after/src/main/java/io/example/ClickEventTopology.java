@@ -8,10 +8,12 @@ import org.apache.kafka.streams.kstream.Consumed;
 /**
  * After 4.2.0: Clean topology with zero manual DLQ code.
  *
- * <p>Deserialization errors are handled transparently by the framework:
+ * <p>Deserialization and processing errors are handled transparently by the framework:
  * <ol>
  *   <li>ClickEventSerde.deserializer() throws for malformed JSON.</li>
  *   <li>LogAndContinueExceptionHandler.handleError() is called automatically.</li>
+ *   <li>The mapValues() business validation throws for negative count.</li>
+ *   <li>LogAndContinueProcessingExceptionHandler.handleError() is called automatically.</li>
  *   <li>The handler builds a DLQ ProducerRecord and returns Response.resume(dlqRecords).</li>
  *   <li>RecordCollectorImpl sends the DLQ record via the SAME StreamsProducer →
  *       SAME Kafka transaction → tx-safe with exactly_once_v2.</li>
@@ -37,7 +39,12 @@ public class ClickEventTopology {
 
         builder
             .stream(inputTopic, Consumed.with(Serdes.String(), new ClickEventSerde()))
-            .mapValues(event -> "user clicked ad=" + event.adId + " count=" + event.count)
+            .mapValues(event -> {
+                if (event.count < 0) {
+                    throw new IllegalArgumentException("count must be non-negative");
+                }
+                return "user clicked ad=" + event.adId + " count=" + event.count;
+            })
             .to(outputTopic);
 
         return builder.build();

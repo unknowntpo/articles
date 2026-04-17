@@ -201,7 +201,7 @@ manual dlqProducer
 
 到了 Kafka 4.2.0，KIP-1034 將這件事正式納入 Kafka Streams 的 error handling flow。
 
-核心方向是：exception handler 可以把要寫入 DLQ 的 records 回交給框架，由 Kafka Streams 透過內部 producer 送出。這項能力加在 Kafka Streams 內建的 deserialization / processing / production exception handling 流程上；本文的 `after/` 範例則聚焦於最常見、也最容易受舊版限制影響的 deserialization error。
+核心方向是：exception handler 可以把要寫入 DLQ 的 records 回交給框架，由 Kafka Streams 透過內部 producer 送出。這項能力加在 Kafka Streams 內建的 deserialization / processing / production exception handling 流程上；本文的 `after/` 範例同時示範 deserialization error 與 processing error。
 
 這個改變的關鍵在於，只要 DLQ record 由框架送出，就能沿用 Kafka Streams 既有的 producer 與 transaction，而不必在 application 層另行建立獨立 producer。
 
@@ -210,11 +210,16 @@ KIP-1034 之後，topology 本身可以維持單純：
 ```java
 builder
     .stream(inputTopic, Consumed.with(Serdes.String(), new ClickEventSerde()))
-    .mapValues(event -> "user clicked ad=" + event.adId + " count=" + event.count)
+    .mapValues(event -> {
+        if (event.count < 0) {
+            throw new IllegalArgumentException("count must be non-negative");
+        }
+        return "user clicked ad=" + event.adId + " count=" + event.count;
+    })
     .to(outputTopic);
 ```
 
-這段 `ClickEventTopology.java` 不包含任何 DLQ 相關 code；沒有手動 `try/catch`、沒有另行建立 producer，也沒有自行補 headers。DLQ 行為不再混入 topology。
+這段 `ClickEventTopology.java` 仍不包含任何 DLQ 相關 code；沒有手動 `try/catch`、沒有另行建立 producer，也沒有自行補 headers。`count < 0` 只是 business validation；該 exception 如何寫入 DLQ，仍由 Kafka Streams 的 processing exception handler 負責。
 
 真正啟用 DLQ 的設定位於 `App.java`。DLQ topic 由下列 config 指定：
 
@@ -233,7 +238,7 @@ props.put(StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG,
 
 這裡也是 KIP-1034 最核心的 API 變化。舊版 exception handler 的回傳值本質上只是在回答「繼續」或「失敗」；4.2.0 之後，handler 的新 `Response` 可以額外攜帶「需要由框架送出的 DLQ records」。也因為 handler 現在可以把 DLQ records 回交給 Kafka Streams，框架才得以透過內部 `StreamsProducer` / `RecordCollector` 送出，而不是把 DLQ 寫入責任留在 application 層。
 
-本文範例實際觸發的是 deserialization error，因此 `LogAndContinueExceptionHandler` 這條路徑的效果如下：
+本文範例中的 malformed JSON 會觸發 deserialization error，因此 `LogAndContinueExceptionHandler` 這條路徑的效果如下：
 
 1. `ClickEventSerde` 反序列化失敗時，會拋 exception。
 2. `LogAndContinueExceptionHandler` 會接手。
@@ -241,7 +246,7 @@ props.put(StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG,
 4. Kafka Streams 透過 `RecordCollectorImpl` 用同一個 `StreamsProducer` 把 record 送出去。
 5. 因為走的是同一個 producer，DLQ 寫入也落在同一個 transaction 邊界內。
 
-`LogAndContinueProcessingExceptionHandler` 則處理 topology 內部的 processing error。Kafka Streams 4.2.0 的 `processing.exception.handler` 預設值是 `LogAndFailProcessingExceptionHandler`；即使設定了 `errors.dead.letter.queue.topic.name`，預設 handler 仍會回傳 fail。因此，若 processing error 也要「寫入 DLQ 後繼續」，必須明確設定 `LogAndContinueProcessingExceptionHandler`。
+本文範例中的 `count < 0` 則會觸發 topology 內部的 processing error，由 `LogAndContinueProcessingExceptionHandler` 接手。Kafka Streams 4.2.0 的 `processing.exception.handler` 預設值是 `LogAndFailProcessingExceptionHandler`；即使設定了 `errors.dead.letter.queue.topic.name`，預設 handler 仍會回傳 fail。因此，若 processing error 也要「寫入 DLQ 後繼續」，必須明確設定 `LogAndContinueProcessingExceptionHandler`。
 
 補充一點：`ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG` 之所以有效，是因為內建 exception handlers 會讀取該 config，並透過 Kafka Streams 內部工具建立 DLQ record；它不是框架對所有 handler 強制套用的行為。多數情境下，內建 handler 已足以涵蓋需求；若需要自訂 DLQ record 內容，仍可改用 custom handler。
 
@@ -284,7 +289,8 @@ public DeserializationExceptionHandler.Response handleError(
 - 不必把 DLQ 邏輯放入 topology；主流程可以維持單純。
 - 不必自行補齊常見 error headers；exception / topic / partition / offset 等 metadata 由框架建立。
 - deserialization error 不再需要 application 層 workaround；框架已提供正式處理路徑。
-- KIP-1034 不只涵蓋 deserialization handler，也延伸到 processing / production exception handler；本文範例則聚焦在 deserialization path。`ProductionExceptionHandler` 處理的是 Kafka Streams 送出到下游時的寫入錯誤；4.2.0 以前，`handle()` 只能回傳 CONTINUE 或 FAIL，沒有 DLQ records；4.2.0 之後，`handleError()` 回傳 `Response`，可以攜帶 DLQ records，也具備 RETRY 選項。
+- processing error 也可以透過內建 handler 回交 DLQ records，不必在 topology 中手動建立 producer。
+- KIP-1034 的能力也延伸到 production exception handler；`ProductionExceptionHandler` 處理的是 Kafka Streams 送出到下游時的寫入錯誤。4.2.0 以前，`handle()` 只能回傳 CONTINUE 或 FAIL，沒有 DLQ records；4.2.0 之後，`handleError()` 回傳 `Response`，可以攜帶 DLQ records，也具備 RETRY 選項。
 - DLQ 與 `exactly_once_v2` 可以放在同一個 transaction 模型中理解。
 
 整體而言，設定更集中，topology 更單純，error metadata 由框架補齊，測試也能直接驗證框架行為。更重要的是，DLQ 寫入回到 transaction 邊界內，能與 EOS 模型一致。
