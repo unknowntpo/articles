@@ -13,7 +13,7 @@ tags: [Kafka, Kafka Streams, DLQ]
 
 問題是，在 Kafka Streams 4.2.0 以前，這件事沒有你想像中那麼直覺。你可以做，但往往要自己補很多東西，而且在某些情況下，根本沒有辦法做到 transaction-safe，特別是你開了 `exactly_once_v2` 之後會更明顯。
 
-Kafka 4.2.0 的 KIP-1034，就是把這一塊補起來。它帶來的改變不只是少寫幾行 code，而是讓 Kafka Streams 的內建 exception handlers 能把 DLQ record 回交給框架自己送，於是這條路徑終於能回到 Kafka Streams 的 transactional write flow 裡。這篇我想用 repo 裡的範例，從舊作法一路走到新作法，直接看差別到底在哪裡。
+KIP-1034 就是來補這塊的。內建 exception handlers 現在可以把 DLQ record 回交給框架，由框架代為送出，DLQ 寫入終於能回到 Kafka Streams 的 transactional write flow 裡。下面用 repo 裡的範例對照舊作法與新作法。
 
 ## 先看問題長什麼樣子
 
@@ -33,7 +33,7 @@ click-events -> deserialize -> process -> click-events-output
 
 如果資料是乾淨的，事情很單純。但只要有一筆像 `NOT_VALID_JSON` 這種壞資料混進來，問題就來了。因為 Kafka Streams 在處理資料之前，得先把 bytes 轉成你要的物件。這一步如果失敗，後面的 processor 根本還沒開始跑。
 
-這也是為什麼 DLQ 在 Kafka Streams 裡，不能只想成「catch exception 然後送另一個 topic」。你得先分清楚，錯誤是發生在 topology 裡，還是發生在 topology 之前。
+所以 DLQ 不能只想成「catch exception 送到另一個 topic」——錯誤可能發生在 topology 裡，也可能發生在 topology 之前。
 
 ```text
 case A: processing error
@@ -144,19 +144,19 @@ dlqRecord.headers().add("__manual.error.offset",
 
 這就是舊版最麻煩的地方：每種錯誤都得自己找對應的處理位置，處理方式還不一樣。
 
-把 `before/` 這兩條路放在一起看，痛點其實很明確，而且每一個都很實務：
+兩條路加起來，要自己處理的事：
 
-- 你得自己決定錯誤該在哪一層攔，processing error 跟 deserialization error 還不是同一套寫法。
-- 你得自己養一把額外的 `KafkaProducer`，包含 lifecycle、設定、送出失敗時怎麼處理。
-- 你得自己定義 headers，要帶哪些 metadata、命名規則怎麼訂，全都要自己維護。
-- 你得自己承擔 tx-safe 的風險，尤其在 EOS 打開時，DLQ 重複寫入不是理論問題，而是真的可能在 retry 時出現。
-- 你得自己測，連測試都會被迫圍繞 workaround 來寫，而不是直接驗證框架行為。
+- 錯誤要在哪一層攔，processing 跟 deserialization 寫法不同
+- 多養一把 `KafkaProducer`，lifecycle、配置、失敗處理都得自己顧
+- headers 命名、要帶哪些 metadata，全都自己訂
+- EOS 打開時，DLQ 在 retry 可能被重複寫入
+- 測試也跟著 workaround 走，不是在驗證框架
 
-換句話說，舊版麻煩的不是程式碼多幾行，而是你為了補一個框架沒內建的能力，最後會把錯誤處理、資料一致性、甚至 observability 的責任一起扛到 application 層。
+舊版麻煩的不是程式碼多幾行，而是錯誤處理、資料一致性、observability 的責任全被推到 application 層。
 
 ## 真正的痛點在 tx-safe
 
-前面在談 deserialization error 那一段，其實只回答了一半的問題：為什麼這類錯誤不能靠 `flatMap`、`branch()`、`split()` 這些 topology 內的手段處理。接下來真正麻煩的，是就算你接受「只能自己送 DLQ」這件事，transaction 邊界的問題還是沒解決。
+就算接受「只能自行寫入 DLQ」這件事，transaction 邊界的問題還是沒解決。
 
 Kafka Streams 在 EOS 模式下，自己會管理 transaction。簡化來看，它的處理流程大概是這樣：
 
@@ -186,18 +186,14 @@ manual dlqProducer
 
 也就是說，手動送出的 DLQ record 不會落在 Kafka Streams 那條 transactional write path 裡。
 
-進一步來看，可能會發生這種事：
+實際可能遇到的情境：
 
 1. 你的手動 DLQ producer 已經把壞資料送出去了。
 2. 但 Streams 自己那個 transaction 後面因為 rebalance、crash，或其他原因 abort。
 3. Streams retry 之後，又重新處理同一筆資料。
 4. 你的 DLQ 又被送一次。
 
-結果就是，這條 DLQ 寫入路徑看起來能用，但其實可能在 retry 時重複寫入。
-
-這也是手動 DLQ 最麻煩的地方：只要你是另外用獨立 producer 把資料送出去，那筆寫入就不會落在 Kafka Streams 的 transaction 裡。後面如果發生 abort 或 retry，DLQ 這條路徑自然也不會跟著 rollback。
-
-所以舊版真正卡住的點，是框架本身沒有給你一條正式、內建、可 tx-safe 的 DLQ 路。
+獨立 producer 送出的 record 不在 Streams 的 transaction 裡，abort 或 retry 都不會跟著 rollback，DLQ 因此可能被重複寫入。這就是舊版的根本限制：框架從未提供一條 tx-safe 的 DLQ 路。
 
 ## Kafka 4.2.0 / KIP-1034：框架終於把這條路補起來
 
@@ -322,7 +318,7 @@ public ProcessingExceptionHandler.Response handleError(
 - KIP-1034 的能力不只涵蓋 deserialization handler，也延伸到 processing / production exception handler；只是本文範例聚焦在 deserialization path。`ProductionExceptionHandler` 值得特別說一句：它負責的是處理過後、Kafka Streams 送出到下游時的寫入錯誤；4.2.0 以前，`handle()` 只能回傳 CONTINUE 或 FAIL，沒有 DLQ 選項；4.2.0 之後，`handleError()` 回傳 `Response`，可以帶 DLQ records，也多了 RETRY 選項。
 - 你比較容易把 DLQ 跟 `exactly_once_v2` 放在一起思考，因為現在它終於回到同一個 transaction 模型裡。
 
-實際用起來差別很直接：設定少了、topology 乾淨了、error 資訊有框架補、測試也好寫了。最重要的是 DLQ 不再掛在 transaction 外面，它終於能跟 EOS 模型一起運作。
+設定少了、topology 乾淨、error 資訊由框架補、測試也好寫。更重要的是 DLQ 回到 transaction 裡，跟 EOS 模型一致。
 
 :::note
 KIP-1034 只定義了「怎麼送 DLQ record」和「預設要帶哪些 headers」，但 DLQ topic 本身不會由 Kafka Streams 自動建立。repo 裡的 `after/src/main/java/io/example/App.java` 會先把 `click-events-dlq` topic 建好，就是因為這個前提。
@@ -432,13 +428,11 @@ cd examples/kafka/kip-1034-dlq-blog-post
 
 ## 結語
 
-KIP-1034 這個功能我覺得很實用，因為它剛好補在一個很常痛、又很難自己補漂亮的地方。
+KIP-1034 補的是一個由來已久的缺口。
 
-在 Kafka 4.2.0 以前，DLQ 不是做不到，但你得自己顧很多細節：錯誤發生在哪一層、怎麼送出去、headers 怎麼補，最難的是 transaction 邊界——用獨立 producer 送 DLQ 就跳出了 Streams 的 tx 範圍，tx-safe 根本無從談起。只要其中一塊沒顧好，整套方案就容易長成半套。
+Kafka 4.2.0 以前，真正制約你的是 transaction 邊界：用獨立 producer 寫 DLQ 就跳出了 Streams 的 tx 範圍，EOS 打開時可能重複寫入。錯誤攔截層級、送出方式、headers 命名也都要自己顧。
 
-到了 Kafka 4.2.0，事情終於簡單很多。把 `StreamsConfig.ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG` 設好，deserialization 錯誤搭配 `LogAndContinueExceptionHandler`、processing 錯誤搭配 `LogAndContinueProcessingExceptionHandler`，就能讓這兩條路都走進 Kafka Streams 自己的處理流程，不需要另外開 producer。
-
-如果你現在正好有 Kafka Streams 應用卡在手動錯誤處理，這一版很值得看一下。
+4.2.0 之後，把 `StreamsConfig.ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG` 設好，deserialization 錯誤搭配 `LogAndContinueExceptionHandler`、processing 錯誤搭配 `LogAndContinueProcessingExceptionHandler`，這兩條路就都走進 Kafka Streams 自己的處理流程，不用另外開 producer。有手動 DLQ 需求的專案，可以評估升級。
 
 參考資料：
 
