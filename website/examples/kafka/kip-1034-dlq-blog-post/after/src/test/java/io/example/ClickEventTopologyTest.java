@@ -12,6 +12,7 @@ import org.apache.kafka.streams.TestInputTopic;
 import org.apache.kafka.streams.TestOutputTopic;
 import org.apache.kafka.streams.TopologyTestDriver;
 import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
+import org.apache.kafka.streams.errors.LogAndContinueProcessingExceptionHandler;
 import org.apache.kafka.streams.test.TestRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +48,8 @@ class ClickEventTopologyTest {
         props.put(StreamsConfig.ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG, DLQ_TOPIC);
         props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
                 LogAndContinueExceptionHandler.class);
+        props.put(StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG,
+                LogAndContinueProcessingExceptionHandler.class);
 
         driver      = new TopologyTestDriver(topology.build(INPUT_TOPIC, OUTPUT_TOPIC), props);
         inputTopic  = driver.createInputTopic(INPUT_TOPIC,  new StringSerializer(),    new StringSerializer());
@@ -78,6 +81,22 @@ class ClickEventTopologyTest {
     }
 
     @Test
+    void testNegativeCountGoesToDlq() {
+        String payload = "{\"ad_id\":\"sidebar-C\",\"count\":-1}";
+
+        inputTopic.pipeInput("user-negative", payload);
+
+        assertTrue(outputTopic.isEmpty());
+        TestRecord<byte[], byte[]> dlqRecord = dlqTopic.readRecord();
+        assertEquals("user-negative", new String(dlqRecord.key()));
+        assertEquals(payload, new String(dlqRecord.value()));
+
+        Header messageHeader = dlqRecord.headers().lastHeader("__streams.errors.message");
+        assertNotNull(messageHeader);
+        assertTrue(new String(messageHeader.value()).contains("count must be non-negative"));
+    }
+
+    @Test
     void testDlqRecordHasStreamsErrorHeaders() {
         inputTopic.pipeInput("user-bad", "NOT_VALID_JSON");
 
@@ -106,8 +125,9 @@ class ClickEventTopologyTest {
         inputTopic.pipeInput("user-3",    "{\"ad_id\":\"sidebar-C\",\"count\":7}");
         inputTopic.pipeInput("user-bad1", "NOT_VALID_JSON");
         inputTopic.pipeInput("user-bad2", "{broken json");
+        inputTopic.pipeInput("user-bad3", "{\"ad_id\":\"sidebar-D\",\"count\":-1}");
 
         assertEquals(3, outputTopic.readKeyValuesToList().size());
-        assertEquals(2, dlqTopic.readKeyValuesToList().size());
+        assertEquals(3, dlqTopic.readKeyValuesToList().size());
     }
 }

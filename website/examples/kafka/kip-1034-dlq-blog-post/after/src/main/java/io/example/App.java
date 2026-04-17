@@ -11,6 +11,7 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
+import org.apache.kafka.streams.errors.LogAndContinueProcessingExceptionHandler;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -140,8 +141,10 @@ public class App {
                     //   builds DLQ record → RecordCollectorImpl sends via same tx (tx-safe!)
                     new String[]{"user-3", "NOT_VALID_JSON"},
                     new String[]{"user-4", "{broken json"},
+                    // valid JSON but invalid business value — mapValues throws → LogAndContinueProcessingExceptionHandler
+                    new String[]{"user-5", "{\"ad_id\":\"sidebar-C\",\"count\":-7}"},
                     // another valid record
-                    new String[]{"user-5", "{\"ad_id\":\"sidebar-C\",\"count\":7}"}
+                    new String[]{"user-6", "{\"ad_id\":\"sidebar-D\",\"count\":7}"}
             );
 
             for (String[] msg : messages) {
@@ -170,6 +173,8 @@ public class App {
         //   - RecordCollectorImpl sends DLQ record via same StreamsProducer (same tx)
         props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
                 LogAndContinueExceptionHandler.class);
+        props.put(StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG,
+                LogAndContinueProcessingExceptionHandler.class);
 
         // Uncomment to prove tx-safety: DLQ still works correctly with EOS
         // props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2);
