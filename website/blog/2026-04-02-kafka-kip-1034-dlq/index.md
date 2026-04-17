@@ -147,7 +147,7 @@ dlqRecord.headers().add("__manual.error.offset",
 兩條路加起來，要自己處理的事：
 
 - 錯誤要在哪一層攔截，processing 跟 deserialization 寫法不同
-- 多養一把 `KafkaProducer`，lifecycle、配置、失敗處理都得自己顧
+- 須另行維護一個 `KafkaProducer`，lifecycle、配置、失敗處理都得自己顧
 - headers 命名、要帶哪些 metadata，全都自己訂
 - EOS 打開時，DLQ 在 retry 可能被重複寫入
 - 測試也跟著 workaround 走，不是在驗證框架
