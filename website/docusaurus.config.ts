@@ -22,8 +22,12 @@ const config: Config = {
   onBrokenLinks: 'throw',
 
   i18n: {
-    defaultLocale: 'en',
-    locales: ['en'],
+    defaultLocale: 'zh-Hant',
+    locales: ['zh-Hant', 'en'],
+    localeConfigs: {
+      'zh-Hant': {label: '中文'},
+      en: {label: 'English'},
+    },
   },
 
   stylesheets: [
@@ -76,6 +80,7 @@ const config: Config = {
           label: 'GitHub',
           position: 'right',
         },
+        {type: 'localeDropdown', position: 'right'},
       ],
     },
     footer: {
