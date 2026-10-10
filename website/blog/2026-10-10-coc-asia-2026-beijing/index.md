@@ -53,6 +53,16 @@ Streaming 分會場的開場。桌上擺了名牌和印著會場 logo 的茶杯�
 
 <!-- TODO: 補上這場的重點與你的心得 -->
 
+**Apache Fluss：From Vision to Production: How Apache Fluss Defines the Storage Layer for Real-Time Data Lakehouses**
+
+<!-- TODO: 確認這是不是你聽的那場（官網議程：Yang Wang，Data Storage & Computing 分會場，8/7 15:00，中文場）；支付寶／阿里的分享是在這場裡，還是另一場？ -->
+
+這次最有趣的發現是 Fluss。Fluss（FLink Unified Streaming Storage）是阿里開源、今年畢業成 Apache 頂級專案的串流儲存，定位是給即時分析用的、原生支援 lakehouse 的 streaming storage。
+
+站在 Kafka 使用者的角度看特別有感：Kafka 是 row-based 的 log，做即時分析時常常得整筆讀出來再丟掉大部分欄位；Fluss 則是 columnar 儲存，可以做 projection pushdown，還支援帶 primary key 的表和更新，再把資料分層進 Iceberg／Paimon 之類的 lakehouse。
+
+<!-- TODO: 補上支付寶（阿里）的落地場景：用在什麼業務、取代了什麼（Kafka？）、規模數字、你覺得跟 Kafka 比最有意思的點 -->
+
 ![Source Dance：真實學生參與真實開源項目](./img/source-dance.jpg)
 
 **Source Dance：真實學生參與真實開源項目**
