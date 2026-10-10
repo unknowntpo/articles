@@ -45,7 +45,7 @@ Streaming 分會場的開場。桌上擺了名牌和印著會場 logo 的茶杯�
 
 分會場結束後，Streaming track 的講者一起上台合照。
 
-### 其他印象深刻的場次
+### 同場的其他講者
 
 ![From Now On, I Want Every Single Message](./img/talk-every-message.jpg)
 
@@ -53,9 +53,11 @@ Streaming 分會場的開場。桌上擺了名牌和印著會場 logo 的茶杯�
 
 <!-- TODO: 補上這場的重點與你的心得 -->
 
-**Apache Fluss：From Vision to Production: How Apache Fluss Defines the Storage Layer for Real-Time Data Lakehouses**
+## 其他分會場
 
-<!-- TODO: 確認這是不是你聽的那場（官網議程：Yang Wang，Data Storage & Computing 分會場，8/7 15:00，中文場）；支付寶／阿里的分享是在這場裡，還是另一場？ -->
+### Apache Fluss：阿里為什麼從 Kafka 換成 Fluss
+
+場次是 **From Vision to Production: How Apache Fluss Defines the Storage Layer for Real-Time Data Lakehouses**，在 Data Storage & Computing 分會場。
 
 這次最有趣的發現是 Fluss。Fluss（FLink Unified Streaming Storage）是阿里開源、今年畢業成 Apache 頂級專案的串流儲存，定位是給即時分析用的、原生支援 lakehouse 的 streaming storage。
 
@@ -88,9 +90,9 @@ Fluss 的解法是把這兩層合起來：串流層本身就是一張有 schema�
 - [Taobao Practice](https://fluss.apache.org/blog/taobao-practice/)
 - [Taobao Instant Commerce: Real-Time Decision](https://fluss.apache.org/blog/taobao-instant-commerce-real-time-decision/)
 
-![Source Dance：真實學生參與真實開源項目](./img/source-dance.jpg)
+### Source Dance：真實學生參與真實開源項目
 
-**Source Dance：真實學生參與真實開源項目**
+![Source Dance：真實學生參與真實開源項目](./img/source-dance.jpg)
 
 這場在講怎麼把學生、導師和開源專案放在一起。他們把流程拆成四步：
 
