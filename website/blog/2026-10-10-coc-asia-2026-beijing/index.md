@@ -61,7 +61,32 @@ Streaming 分會場的開場。桌上擺了名牌和印著會場 logo 的茶杯�
 
 站在 Kafka 使用者的角度看特別有感：Kafka 是 row-based 的 log，做即時分析時常常得整筆讀出來再丟掉大部分欄位；Fluss 則是 columnar 儲存，可以做 projection pushdown，還支援帶 primary key 的表和更新，再把資料分層進 Iceberg／Paimon 之類的 lakehouse。
 
-<!-- TODO: 補上支付寶（阿里）的落地場景：用在什麼業務、取代了什麼（Kafka？）、規模數字、你覺得跟 Kafka 比最有意思的點 -->
+這場最有意思的是講他們**為什麼從 Kafka 換成 Fluss**。
+
+<!-- TODO: 台上講的是支付寶還是淘寶？阿里公開的案例主要是淘寶（見下方延伸閱讀），請確認講者講的是哪個業務，並補上台上提到的規模數字 -->
+
+我理解的原因可以收斂成一句話：**message queue 和 lakehouse 是兩層，中間要靠一堆 Flink job 接起來。** 舊架構大概長這樣：
+
+```text
+Kafka（阿里內部叫 TT） → Flink ETL → Paimon（lakehouse） → StarRocks（查詢）
+```
+
+這個架構在規模大了之後會一直撞到幾個問題：
+
+- **每張表都要一支同步 job**：Kafka topic 要變成 lakehouse 的表，就得一張表配一支 Flink job，資料也存了兩份。
+- **stream join 的 state 越長越大**：多條串流 join 成一張寬表，Flink 的 state 只增不減，資源和 checkpoint 都很吃力。
+- **Kafka 不懂 schema、不擅長更新**：Kafka 只是一條 append-only 的 log，主鍵更新、刪除、點查都得在外面另外補。
+
+Fluss 的解法是把這兩層合起來：串流層本身就是一張有 schema、有主鍵、欄式儲存的表，再自動分層進 Paimon。查詢的時候可以只讀需要的欄位，Flink 的維表 join 可以直接對 Fluss 做主鍵點查，不必把整份資料塞進 state。
+
+平常一直在讀 Kafka source code，聽這場的心情有點複雜但很過癮。Kafka 的設計重點是「一條通用、高吞吐的 log」，Fluss 則是很明確地為「即時分析」這個場景重新取捨。它不是要取代所有 Kafka 的用途，而是把 Kafka 在分析場景下最痛的那幾塊拿出來重做。
+
+<!-- TODO: 補上你自己的想法，例如：Kafka 這邊有沒有類似方向的 KIP（例如 tiered storage、Iceberg topic）、你覺得 Fluss 會不會在台灣被採用 -->
+
+延伸閱讀（Fluss 官方部落格的阿里落地案例）：
+
+- [Taobao Practice](https://fluss.apache.org/blog/taobao-practice/)
+- [Taobao Instant Commerce: Real-Time Decision](https://fluss.apache.org/blog/taobao-instant-commerce-real-time-decision/)
 
 ![Source Dance：真實學生參與真實開源項目](./img/source-dance.jpg)
 
